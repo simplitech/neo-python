@@ -1,0 +1,4 @@
+[submodule "neo-python-core"]
+	path = neo-python-core
+	url = https://github.com/simplitech/neo-python-core.git
+	branch = neo-core-model
