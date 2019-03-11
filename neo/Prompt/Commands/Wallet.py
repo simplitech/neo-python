@@ -1,8 +1,8 @@
-from neo.Core.Blockchain import Blockchain
-from neo.Core.TX.ClaimTransaction import ClaimTransaction
-from neo.Core.TX.Transaction import TransactionOutput
-from neo.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
-from neo.SmartContract.ContractParameterContext import ContractParametersContext
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.TX.ClaimTransaction import ClaimTransaction
+from neocore.Core.TX.Transaction import TransactionOutput
+from neocore.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
+from neocore.Core.Contract.ContractParameterContext import ContractParametersContext
 from neo.Network.NodeLeader import NodeLeader
 from neo.Prompt import Utils as PromptUtils
 from neo.Wallets.utils import to_aes_key
@@ -19,7 +19,7 @@ from neo.Prompt.Commands.Tokens import CommandWalletToken
 from neo.Prompt.Commands.WalletAddress import CommandWalletAddress
 from neo.Prompt.Commands.WalletImport import CommandWalletImport
 from neo.Prompt.Commands.WalletExport import CommandWalletExport
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neocore.Utils import isValidPublicAddress
 from neo.Prompt.PromptPrinter import prompt_print as print
 
@@ -306,7 +306,7 @@ def ClaimGas(wallet, from_addr_str=None, to_addr_str=None):
 
     unclaimed_coin_refs = [coin.Reference for coin in unclaimed_coins]
 
-    available_bonus = Blockchain.Default().CalculateBonusIgnoreClaimed(unclaimed_coin_refs)
+    available_bonus = Blockchain.GetInstance().CalculateBonusIgnoreClaimed(unclaimed_coin_refs)
 
     if available_bonus == Fixed8.Zero():
         print("No gas to claim")

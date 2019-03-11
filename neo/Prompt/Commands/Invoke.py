@@ -1,46 +1,39 @@
 import binascii
 import json
-from neo.Blockchain import GetBlockchain
-from neo.VM.ScriptBuilder import ScriptBuilder
-from neo.VM.InteropService import InteropInterface
+from neocore.Core.VM.ScriptBuilder import ScriptBuilder
+from neocore.Core.VM.InteropService import InteropInterface
 from neo.Network.NodeLeader import NodeLeader
 from neo.Prompt import Utils as PromptUtils
-from neo.Implementations.Blockchains.LevelDB.DBCollection import DBCollection
-from neo.Implementations.Blockchains.LevelDB.DBPrefix import DBPrefix
-from neo.Implementations.Blockchains.LevelDB.CachedScriptTable import CachedScriptTable
+from neocore.Core.Contract.CachedScriptTable import CachedScriptTable
 from neo.Implementations.Blockchains.LevelDB.DebugStorage import DebugStorage
 
-from neo.Core.State.AccountState import AccountState
-from neo.Core.State.AssetState import AssetState
-from neo.Core.State.ValidatorState import ValidatorState
-from neo.Core.State.ContractState import ContractState
-from neo.Core.State.StorageItem import StorageItem
 
-from neo.Core.TX.InvocationTransaction import InvocationTransaction
-from neo.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
-from neo.Core.TX.Transaction import TransactionOutput, TXFeeError
+from neocore.Core.State.ContractState import ContractState
+from neocore.Core.TX.InvocationTransaction import InvocationTransaction
+from neocore.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
+from neocore.Core.TX.Transaction import TransactionOutput, TXFeeError
 
-from neo.SmartContract.ApplicationEngine import ApplicationEngine
-from neo.SmartContract import TriggerType
-from neo.SmartContract.StateMachine import StateMachine
-from neo.SmartContract.ContractParameterContext import ContractParametersContext
-from neo.SmartContract.Contract import Contract
+from neocore.Core.Contract.ApplicationEngine import ApplicationEngine
+from neocore.Core.Contract import TriggerType
+from neocore.Core.Contract.StateMachine import StateMachine
+from neocore.Core.Contract.ContractParameterContext import ContractParametersContext
+from neocore.Core.Contract.Contract import Contract
 from neocore.Cryptography.Helper import scripthash_to_address
 from neocore.Cryptography.Crypto import Crypto
 from neocore.Fixed8 import Fixed8
 from neo.Settings import settings
-from neo.Core.Blockchain import Blockchain
-from neo.EventHub import events
+from neocore.Core.Blockchain import Blockchain
+from neocore.EventHub import events
 from prompt_toolkit import prompt
 from copy import deepcopy
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Prompt.PromptPrinter import prompt_print as print
 
 logger = log_manager.getLogger()
 
 from neocore.Cryptography.ECCurve import ECDSA
 from neocore.UInt160 import UInt160
-from neo.VM.OpCode import PACK
+from neocore.Core.VM.OpCode import PACK
 
 DEFAULT_MIN_FEE = Fixed8.FromDecimal(.0001)
 
@@ -111,7 +104,7 @@ def InvokeWithTokenVerificationScript(wallet, tx, token, fee=Fixed8.Zero(), invo
 
     if wallet_tx:
 
-        token_contract_state = Blockchain.Default().GetContract(token.ScriptHash.ToString())
+        token_contract_state = Blockchain.GetInstance().GetContract(token.ScriptHash.ToString())
         print("token contract  %s " % token_contract_state)
 
         tx.Attributes = [
@@ -164,7 +157,7 @@ def InvokeWithTokenVerificationScript(wallet, tx, token, fee=Fixed8.Zero(), invo
 def TestInvokeContract(wallet, args, withdrawal_tx=None,
                        parse_params=True, from_addr=None,
                        min_fee=DEFAULT_MIN_FEE, invoke_attrs=None, owners=None):
-    BC = GetBlockchain()
+    BC = Blockchain.GetInstance()
 
     contract = BC.GetContract(args[0])
 
@@ -278,13 +271,13 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
     if from_addr is not None:
         from_addr = PromptUtils.lookup_addr_str(wallet, from_addr)
 
-    bc = GetBlockchain()
+    bc = Blockchain.GetInstance()
 
-    accounts = DBCollection(bc._db, DBPrefix.ST_Account, AccountState)
-    assets = DBCollection(bc._db, DBPrefix.ST_Asset, AssetState)
-    validators = DBCollection(bc._db, DBPrefix.ST_Validator, ValidatorState)
-    contracts = DBCollection(bc._db, DBPrefix.ST_Contract, ContractState)
-    storages = DBCollection(bc._db, DBPrefix.ST_Storage, StorageItem)
+    accounts = bc.nodeServices.dbService.getAccountsCollection()
+    assets = bc.nodeServices.dbService.getAssetsCollection()
+    validators = bc.nodeServices.dbService.getValidatorsCollection()
+    contracts = bc.nodeServices.dbService.getContractCollection()
+    storages = bc.nodeServices.dbService.getStorageCollection()
 
     # if we are using a withdrawal tx, don't recreate the invocation tx
     # also, we don't want to reset the inputs / outputs
@@ -362,7 +355,7 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
             # this will be removed in favor of neo.EventHub
             if len(service.notifications) > 0:
                 for n in service.notifications:
-                    Blockchain.Default().OnNotify(n)
+                    Blockchain.GetInstance().OnNotify(n)
 
             print("Used %s Gas " % engine.GasConsumed().ToString())
 
@@ -410,17 +403,18 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
 def test_deploy_and_invoke(deploy_script, invoke_args, wallet,
                            from_addr=None, min_fee=DEFAULT_MIN_FEE, invocation_test_mode=True,
                            debug_map=None, invoke_attrs=None, owners=None):
-    bc = GetBlockchain()
+    bc = Blockchain.GetInstance()
 
-    accounts = DBCollection(bc._db, DBPrefix.ST_Account, AccountState)
-    assets = DBCollection(bc._db, DBPrefix.ST_Asset, AssetState)
-    validators = DBCollection(bc._db, DBPrefix.ST_Validator, ValidatorState)
-    contracts = DBCollection(bc._db, DBPrefix.ST_Contract, ContractState)
-    storages = DBCollection(bc._db, DBPrefix.ST_Storage, StorageItem)
+    accounts = bc.nodeServices.dbService.getAccountsCollection()
+    assets = bc.nodeServices.dbService.getAssetsCollection()
+    validators = bc.nodeServices.dbService.getValidatorsCollection()
+    contracts = bc.nodeServices.dbService.getContractCollection()
+    storages = bc.nodeServices.dbService.getStorageCollection()
+
 
     if settings.USE_DEBUG_STORAGE:
         debug_storage = DebugStorage.instance()
-        storages = DBCollection(debug_storage.db, DBPrefix.ST_Storage, StorageItem)
+        storages = bc.nodeServices.dbService.getStorageCollection()
         storages.DebugStorage = True
 
     dtx = InvocationTransaction()
@@ -606,7 +600,7 @@ def test_deploy_and_invoke(deploy_script, invoke_args, wallet,
             if len(service.notifications) > 0:
 
                 for n in service.notifications:
-                    Blockchain.Default().OnNotify(n)
+                    Blockchain.GetInstance().OnNotify(n)
 
             logger.info("Used %s Gas " % engine.GasConsumed().ToString())
 

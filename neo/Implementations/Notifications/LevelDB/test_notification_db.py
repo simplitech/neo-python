@@ -1,7 +1,7 @@
 from unittest import TestCase
 from neo.Settings import settings
-from neo.SmartContract.SmartContractEvent import SmartContractEvent, NotifyEvent
-from neo.SmartContract.ContractParameter import ContractParameterType, ContractParameter
+from neocore.Core.Contract.SmartContractEvent import SmartContractEvent, NotifyEvent
+from neocore.Core.Contract.ContractParameter import ContractParameterType, ContractParameter
 from neocore.UInt160 import UInt160
 from neocore.UInt256 import UInt256
 from uuid import uuid1

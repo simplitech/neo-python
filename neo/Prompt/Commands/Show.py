@@ -4,13 +4,13 @@ import datetime
 from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
 from neo.Prompt.PromptData import PromptData
 from neo.Prompt.Utils import get_arg
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neocore.UInt256 import UInt256
 from neocore.UInt160 import UInt160
-from neo.IO.MemoryStream import StreamManager
+from neocore.IO.MemoryStream import StreamManager
 from neo.Network.NodeLeader import NodeLeader
 from neo.Implementations.Notifications.LevelDB.NotificationDB import NotificationDB
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Prompt.PromptPrinter import prompt_print as print
 import json
 
@@ -57,7 +57,7 @@ class CommandShowBlock(CommandBase):
         item = get_arg(arguments)
         txarg = get_arg(arguments, 1)
         if item is not None:
-            block = Blockchain.Default().GetBlock(item)
+            block = Blockchain.GetInstance().GetBlock(item)
 
             if block is not None:
                 block.LoadTransactions()
@@ -92,7 +92,7 @@ class CommandShowHeader(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            header = Blockchain.Default().GetHeaderBy(item)
+            header = Blockchain.GetInstance().GetHeaderBy(item)
             if header is not None:
                 print(json.dumps(header.ToJson(), indent=4))
                 return header.ToJson()
@@ -116,12 +116,12 @@ class CommandShowTx(CommandBase):
         if len(arguments):
             try:
                 txid = UInt256.ParseString(get_arg(arguments))
-                tx, height = Blockchain.Default().GetTransaction(txid)
+                tx, height = Blockchain.GetInstance().GetTransaction(txid)
                 if height > -1:
                     jsn = tx.ToJson()
                     jsn['height'] = height
                     jsn['unspents'] = [uns.ToJson(tx.outputs.index(uns)) for uns in
-                                       Blockchain.Default().GetAllUnspent(txid)]
+                                       Blockchain.GetInstance().GetAllUnspent(txid)]
                     print(json.dumps(jsn, indent=4))
                     return jsn
                 else:
@@ -180,8 +180,8 @@ class CommandShowState(CommandBase):
         super().__init__()
 
     def execute(self, arguments=None):
-        height = Blockchain.Default().Height
-        headers = Blockchain.Default().HeaderHeight
+        height = Blockchain.GetInstance().Height
+        headers = Blockchain.GetInstance().HeaderHeight
 
         diff = height - PromptData.Prompt.start_height
         now = datetime.datetime.utcnow()
@@ -194,10 +194,10 @@ class CommandShowState(CommandBase):
         tps = 0
         if diff > 0 and mins > 0:
             bpm = diff / mins
-            tps = Blockchain.Default().TXProcessed / secs
+            tps = Blockchain.GetInstance().TXProcessed / secs
 
         out = "Progress: %s / %s\n" % (height, headers)
-        out += "Block-cache length %s\n" % Blockchain.Default().BlockCacheCount
+        out += "Block-cache length %s\n" % Blockchain.GetInstance().BlockCacheCount
         out += "Blocks since program start %s\n" % diff
         out += "Time elapsed %s mins\n" % mins
         out += "Blocks per min %s \n" % bpm
@@ -232,7 +232,7 @@ class CommandShowNotifications(CommandBase):
             else:
                 try:
                     block_height = int(item)
-                    if block_height < Blockchain.Default().Height:
+                    if block_height < Blockchain.GetInstance().Height:
                         events = NotificationDB.instance().get_by_block(block_height)
                     else:
                         print("Block %s not found" % block_height)
@@ -263,7 +263,7 @@ class CommandShowAccount(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            account = Blockchain.Default().GetAccountState(item, print_all_accounts=True)
+            account = Blockchain.GetInstance().GetAccountState(item, print_all_accounts=True)
 
             if account is not None:
                 print(json.dumps(account.ToJson(), indent=4))
@@ -288,19 +288,19 @@ class CommandShowAsset(CommandBase):
         item = get_arg(arguments)
         if item is not None:
             if item.lower() == "all":
-                assets = Blockchain.Default().ShowAllAssets()
+                assets = Blockchain.GetInstance().ShowAllAssets()
                 assetlist = []
                 for asset in assets:
-                    state = Blockchain.Default().GetAssetState(asset.decode('utf-8')).ToJson()
+                    state = Blockchain.GetInstance().GetAssetState(asset.decode('utf-8')).ToJson()
                     asset_dict = {state['name']: state['assetId']}
                     assetlist.append(asset_dict)
                 print(json.dumps(assetlist, indent=4))
                 return assetlist
 
             if item.lower() == 'neo':
-                assetId = Blockchain.Default().SystemShare().Hash
+                assetId = Blockchain.GetInstance().SystemShare().Hash
             elif item.lower() == 'gas':
-                assetId = Blockchain.Default().SystemCoin().Hash
+                assetId = Blockchain.GetInstance().SystemCoin().Hash
             else:
                 try:
                     assetId = UInt256.ParseString(item)
@@ -308,7 +308,7 @@ class CommandShowAsset(CommandBase):
                     print("Could not find asset from args: %s" % arguments)
                     return
 
-            asset = Blockchain.Default().GetAssetState(assetId.ToBytes())
+            asset = Blockchain.GetInstance().GetAssetState(assetId.ToBytes())
 
             if asset is not None:
                 print(json.dumps(asset.ToJson(), indent=4))
@@ -337,10 +337,10 @@ class CommandShowContract(CommandBase):
         item = get_arg(arguments)
         if item is not None:
             if item.lower() == "all":
-                contracts = Blockchain.Default().ShowAllContracts()
+                contracts = Blockchain.GetInstance().ShowAllContracts()
                 contractlist = []
                 for contract in contracts:
-                    state = Blockchain.Default().GetContract(contract.decode('utf-8')).ToJson()
+                    state = Blockchain.GetInstance().GetContract(contract.decode('utf-8')).ToJson()
                     contract_dict = {state['name']: state['hash']}
                     contractlist.append(contract_dict)
                 print(json.dumps(contractlist, indent=4))
@@ -352,7 +352,7 @@ class CommandShowContract(CommandBase):
                 print("Could not find contract from args: %s" % arguments)
                 return
 
-            contract = Blockchain.Default().GetContract(hash)
+            contract = Blockchain.GetInstance().GetContract(hash)
 
             if contract is not None:
                 contract.DetermineIsNEP5()

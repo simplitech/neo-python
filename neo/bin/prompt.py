@@ -4,14 +4,17 @@ import argparse
 import datetime
 import os
 import traceback
+
+from neocore.IO.DBService import DBService
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.shortcuts import print_formatted_text, PromptSession
 from prompt_toolkit.formatted_text import FormattedText
 from twisted.internet import reactor, task
 from neo import __version__
-from neo.Core.Blockchain import Blockchain
-from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
+from neocore.Core.Blockchain import Blockchain
+
+from neo.Implementations.Blockchains.LevelDB.LevelDBService import LevelDBService
 from neo.Implementations.Notifications.LevelDB.NotificationDB import NotificationDB
 from neo.Network.NodeLeader import NodeLeader
 from neo.Prompt.Commands.Wallet import CommandWallet
@@ -21,9 +24,10 @@ from neo.Prompt.Commands.Config import CommandConfig
 from neo.Prompt.Commands.SC import CommandSC
 from neo.Prompt.PromptData import PromptData
 from neo.Prompt.InputParser import InputParser
+from neo.Services.LocalNode import LocalNode
 from neo.Settings import settings, PrivnetConnectionError
 from neo.UserPreferences import preferences
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Prompt.PromptPrinter import prompt_print, token_style
 
 logger = log_manager.getLogger()
@@ -90,15 +94,15 @@ class PromptInterface:
             PromptInterface.history = PromptFileHistory(history_filename)
 
         self.input_parser = InputParser()
-        self.start_height = Blockchain.Default().Height
+        self.start_height = Blockchain.GetInstance().Height
         self.start_dt = datetime.datetime.utcnow()
 
     def get_bottom_toolbar(self, cli=None):
         out = []
         try:
             return "[%s] Progress: %s/%s" % (settings.net_name,
-                                             str(Blockchain.Default().Height),
-                                             str(Blockchain.Default().HeaderHeight))
+                                             str(Blockchain.GetInstance().Height),
+                                             str(Blockchain.GetInstance().HeaderHeight))
         except Exception as e:
             pass
 
@@ -129,7 +133,7 @@ class PromptInterface:
         print('Shutting down. This may take a bit...')
         self.go_on = False
         PromptData.close_wallet()
-        Blockchain.Default().Dispose()
+        Blockchain.GetInstance().Dispose()
         NodeLeader.Instance().Shutdown()
         reactor.stop()
 
@@ -157,66 +161,66 @@ class PromptInterface:
         logger.debug("On DB loop error! %s " % err)
 
     def run(self):
-        dbloop = task.LoopingCall(Blockchain.Default().PersistBlocks)
+        dbloop = task.LoopingCall(Blockchain.GetInstance().PersistBlocks)
         dbloop_deferred = dbloop.start(.1)
         dbloop_deferred.addErrback(self.on_looperror)
 
         tokens = [("class:neo", 'NEO'), ("class:default", ' cli. Type '),
                   ("class:command", '\'help\' '), ("class:default", 'to get started')]
 
-        print_formatted_text(FormattedText(tokens), style=token_style)
-
-        print('\n')
-
-        while self.go_on:
-
-            session = PromptSession("neo> ",
-                                    completer=self.get_completer(),
-                                    history=self.history,
-                                    bottom_toolbar=self.get_bottom_toolbar,
-                                    style=token_style,
-                                    refresh_interval=3,
-                                    )
-
-            try:
-                result = session.prompt()
-            except EOFError:
-                # Control-D pressed: quit
-                return self.quit()
-            except KeyboardInterrupt:
-                # Control-C pressed: do nothing
-                continue
-            except Exception as e:
-                logger.error("Exception handling input: %s " % e)
-
-            try:
-                command, arguments = self.input_parser.parse_input(result)
-
-                if command is not None and len(command) > 0:
-                    command = command.lower()
-
-                    if command in self.commands:
-                        cmd = self.commands[command]
-
-                        if len(arguments) > 0 and arguments[-1] == 'help':
-                            cmd.handle_help(arguments)
-                        else:
-                            cmd.execute(arguments)
-                    else:
-                        if command == 'quit' or command == 'exit':
-                            self.quit()
-                        elif command == 'help':
-                            self.help()
-                        elif command is None:
-                            print("Please specify a command")
-                        else:
-                            print("Command '%s' not found" % command)
-
-            except Exception as e:
-
-                print("Could not execute command: %s" % e)
-                traceback.print_stack()
-                traceback.print_exc()
+        # print_formatted_text(FormattedText(tokens), style=token_style)
+        #
+        # print('\n')
+        #
+        # while self.go_on:
+        #
+        #     session = PromptSession("neo> ",
+        #                             completer=self.get_completer(),
+        #                             history=self.history,
+        #                             bottom_toolbar=self.get_bottom_toolbar,
+        #                             style=token_style,
+        #                             refresh_interval=3,
+        #                             )
+        #
+        #     try:
+        #         result = session.prompt()
+        #     except EOFError:
+        #         # Control-D pressed: quit
+        #         return self.quit()
+        #     except KeyboardInterrupt:
+        #         # Control-C pressed: do nothing
+        #         continue
+        #     except Exception as e:
+        #         logger.error("Exception handling input: %s " % e)
+        #
+        #     try:
+        #         command, arguments = self.input_parser.parse_input(result)
+        #
+        #         if command is not None and len(command) > 0:
+        #             command = command.lower()
+        #
+        #             if command in self.commands:
+        #                 cmd = self.commands[command]
+        #
+        #                 if len(arguments) > 0 and arguments[-1] == 'help':
+        #                     cmd.handle_help(arguments)
+        #                 else:
+        #                     cmd.execute(arguments)
+        #             else:
+        #                 if command == 'quit' or command == 'exit':
+        #                     self.quit()
+        #                 elif command == 'help':
+        #                     self.help()
+        #                 elif command is None:
+        #                     print("Please specify a command")
+        #                 else:
+        #                     print("Command '%s' not found" % command)
+        #
+        #     except Exception as e:
+        #
+        #         print("Could not execute command: %s" % e)
+        #         traceback.print_stack()
+        #         traceback.print_exc()
 
 
 def main():
@@ -293,8 +297,12 @@ def main():
         settings.set_max_peers(args.maxpeers)
 
     # Instantiate the blockchain and subscribe to notifications
-    blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
+    dbServices = LevelDBService(settings.chain_leveldb_path)
+    nodeServices = LocalNode(settings, dbServices)
+    blockchain = Blockchain(nodeServices, nodeServices)
+    Blockchain.DeregisterBlockchain()
     Blockchain.RegisterBlockchain(blockchain)
+    nodeServices.Initialize()
 
     # Try to set up a notification db
     if NotificationDB.instance():
@@ -315,7 +323,7 @@ def main():
 
     # After the reactor is stopped, gracefully shutdown the database.
     NotificationDB.close()
-    Blockchain.Default().Dispose()
+    Blockchain.GetInstance().Dispose()
     NodeLeader.Instance().Shutdown()
 
 

@@ -11,7 +11,7 @@ import json
 
 from json.decoder import JSONDecodeError
 from neo.Settings import FILENAME_PREFERENCES
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

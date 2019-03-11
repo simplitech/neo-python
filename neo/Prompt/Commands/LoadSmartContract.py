@@ -1,13 +1,13 @@
 import binascii
 from neo.Prompt.Utils import parse_param
-from neo.Core.FunctionCode import FunctionCode
-from neo.Core.State.ContractState import ContractPropertyState
-from neo.SmartContract.ContractParameterType import ContractParameterType
+from neocore.Core.FunctionCode import FunctionCode
+from neocore.Core.State.ContractState import ContractPropertyState
+from neocore.Core.Contract.ContractParameterType import ContractParameterType
 from prompt_toolkit import prompt
 import json
-from neo.VM.ScriptBuilder import ScriptBuilder
-from neo.Core.Blockchain import Blockchain
-from neo.SmartContract.Contract import Contract
+from neocore.Core.VM.ScriptBuilder import ScriptBuilder
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.Contract.Contract import Contract
 from neocore.BigInteger import BigInteger
 from neo.Prompt.PromptPrinter import prompt_print as print
 
@@ -23,7 +23,7 @@ def ImportContractAddr(wallet, contract_hash, pubkey_script_hash):
         neo.SmartContract.Contract.Contract
     """
 
-    contract = Blockchain.Default().GetContract(contract_hash)
+    contract = Blockchain.GetInstance().GetContract(contract_hash)
     if not contract or not pubkey_script_hash:
         print("Could not find contract")
         return

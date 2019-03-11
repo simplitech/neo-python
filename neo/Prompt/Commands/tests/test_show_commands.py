@@ -235,7 +235,7 @@ class CommandShowTestCase(BlockchainFixtureTestCase):
         self.assertFalse(res)
 
         # test bad block
-        index = Blockchain.Default().Height + 1
+        index = Blockchain.GetInstance().Height + 1
         args = ['notifications', str(index)]
         res = CommandShow().execute(args)
         self.assertFalse(res)

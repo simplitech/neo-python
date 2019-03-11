@@ -3,14 +3,14 @@ from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
 from neo.Wallets.utils import to_aes_key
 from neo.Prompt.Commands.WalletAddress import AddAlias
 from neo.Prompt.Utils import parse_param, lookup_addr_str
-from neo.Core.Blockchain import Blockchain
-from neo.Core.Helper import Helper
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.Helper import Helper
 from neocore.UInt160 import UInt160
 from neocore.Fixed8 import Fixed8
 from neocore.KeyPair import KeyPair
 from neo.Wallets.NEP5Token import NEP5Token
-from neo.SmartContract.ContractParameterContext import ContractParametersContext
-from neo.Core.TX.Transaction import ContractTransaction, TransactionOutput, TXFeeError
+from neocore.Core.Contract.ContractParameterContext import ContractParametersContext
+from neocore.Core.TX.Transaction import ContractTransaction, TransactionOutput, TXFeeError
 from neo.Network.NodeLeader import NodeLeader
 import binascii
 
@@ -26,11 +26,11 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     @property
     def GAS(self):
-        return Blockchain.Default().SystemCoin().Hash
+        return Blockchain.GetInstance().SystemCoin().Hash
 
     @property
     def NEO(self):
-        return Blockchain.Default().SystemShare().Hash
+        return Blockchain.GetInstance().SystemShare().Hash
 
     @classmethod
     def GetWallet1(cls, recreate=False):
@@ -141,7 +141,7 @@ class UserWalletTestCase(WalletFixtureTestCase):
         wallet = self.GetWallet1()
 
         token_hash = b'31730cc9a1844891a3bafd1aa929a4142860d8d3'
-        contract = Blockchain.Default().GetContract(token_hash)
+        contract = Blockchain.GetInstance().GetContract(token_hash)
 
         token = NEP5Token(binascii.hexlify(contract.Code.Script))
         token.Query()

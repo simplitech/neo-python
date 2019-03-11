@@ -1,11 +1,11 @@
+from neocore.Core.Blockchain import Blockchain
 from peewee import Model, CharField, BooleanField, ForeignKeyField, IntegerField, DateTimeField, BlobField, AutoField
 from .PWDatabase import PWDatabase
 from neocore.Cryptography.Crypto import Crypto
 from neocore.UInt256 import UInt256
 from neocore.UInt160 import UInt160
 import binascii
-from neo.Wallets.Coin import CoinReference
-from neo.Blockchain import GetBlockchain
+from neocore.Core.CoinReference import CoinReference
 
 
 class ModelBase(Model):
@@ -130,15 +130,15 @@ class VINHold(ModelBase):
 
     @property
     def AssetName(self):
-        if self.AssetId == GetBlockchain().SystemShare().Hash:
+        if self.AssetId == Blockchain.GetInstance.SystemShare().Hash:
             return 'NEO'
-        elif self.AssetId == GetBlockchain().SystemCoin().Hash:
+        elif self.AssetId == Blockchain.GetInstance.SystemCoin().Hash:
             return 'Gas'
         return 'Unknown'
 
     @property
     def Output(self):
-        tx, height = GetBlockchain().GetTransaction(self.TXHash)
+        tx, height = Blockchain.GetInstance.GetTransaction(self.TXHash)
         output = tx.outputs[self.Index]
         return output
 

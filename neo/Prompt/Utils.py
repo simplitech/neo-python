@@ -1,15 +1,15 @@
 import binascii
 from neocore.BigInteger import BigInteger
 from neocore.Fixed8 import Fixed8
-from neo.Core.Helper import Helper
-from neo.Core.Blockchain import Blockchain
-from neo.Wallets.Coin import CoinState
-from neo.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
-from neo.SmartContract.ContractParameter import ContractParameterType
+from neocore.Core.Helper import Helper
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.State import CoinState
+from neocore.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
+from neocore.Core.Contract.ContractParameter import ContractParameterType
 from neocore.Cryptography.ECCurve import ECDSA
 from decimal import Decimal
 from prompt_toolkit.shortcuts import PromptSession
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Wallets import NEP5Token
 from neocore.Cryptography.Crypto import Crypto
 from typing import TYPE_CHECKING
@@ -80,11 +80,11 @@ def get_asset_id(wallet, asset_str):
             return token
 
     if asset_str.lower() == 'neo':
-        assetId = Blockchain.Default().SystemShare().Hash
+        assetId = Blockchain.GetInstance().SystemShare().Hash
     elif asset_str.lower() == 'gas':
-        assetId = Blockchain.Default().SystemCoin().Hash
-    elif Blockchain.Default().GetAssetState(asset_str):
-        assetId = Blockchain.Default().GetAssetState(asset_str).AssetId
+        assetId = Blockchain.GetInstance().SystemCoin().Hash
+    elif Blockchain.GetInstance().GetAssetState(asset_str):
+        assetId = Blockchain.GetInstance().GetAssetState(asset_str).AssetId
 
     return assetId
 
@@ -95,7 +95,7 @@ def get_asset_amount(amount, assetId):
         print("invalid amount format")
         return False
 
-    elif f8amount.value % pow(10, 8 - Blockchain.Default().GetAssetState(assetId.ToBytes()).Precision) != 0:
+    elif f8amount.value % pow(10, 8 - Blockchain.GetInstance().GetAssetState(assetId.ToBytes()).Precision) != 0:
         print("incorrect amount precision")
         return False
 

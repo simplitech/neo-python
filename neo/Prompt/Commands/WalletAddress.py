@@ -5,12 +5,12 @@ from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
 from neo.Implementations.Wallets.peewee.Models import Account
 from neocore.Utils import isValidPublicAddress
 from neocore.Fixed8 import Fixed8
-from neo.SmartContract.ContractParameterContext import ContractParametersContext
+from neocore.Core.Contract.ContractParameterContext import ContractParametersContext
 from neo.Network.NodeLeader import NodeLeader
 from prompt_toolkit import prompt
-from neo.Core.Blockchain import Blockchain
-from neo.Core.TX.Transaction import ContractTransaction
-from neo.Core.TX.Transaction import TransactionOutput
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.TX.Transaction import ContractTransaction
+from neocore.Core.TX.Transaction import TransactionOutput
 from neo.Prompt.PromptPrinter import prompt_print as print
 
 import sys
@@ -294,7 +294,7 @@ def split_to_vouts(asset, addr, input_val, divisions):
     outputs = []
     total = Fixed8.Zero()
 
-    if asset == Blockchain.Default().SystemShare().Hash:
+    if asset == Blockchain.GetInstance().SystemShare().Hash:
         if new_amounts % Fixed8.FD() > Fixed8.Zero():
             new_amounts = new_amounts.Ceil()
 

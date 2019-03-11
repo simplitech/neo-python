@@ -9,6 +9,7 @@ import os
 import shutil
 from tempfile import mkdtemp
 from klein.test.test_resource import requestMock
+from neocore.Core.Blockchain import Blockchain
 from twisted.web import server
 from twisted.web.test.test_web import DummyChannel
 
@@ -17,9 +18,8 @@ from neo.api.JSONRPC.JsonRpcApi import JsonRpcApi
 from neo.Utils.BlockchainFixtureTestCase import BlockchainFixtureTestCase
 from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
 from neo.Wallets.utils import to_aes_key
-from neo.IO.Helper import Helper
+from neocore.IO.Helper import Helper
 from neocore.UInt256 import UInt256
-from neo.Blockchain import GetBlockchain
 from neo.Network.NodeLeader import NodeLeader
 from neo.Network.NeoNode import NeoNode
 from copy import deepcopy
@@ -105,7 +105,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         return ret.encode('utf-8')
 
     def test_initial_setup(self):
-        self.assertTrue(GetBlockchain().GetBlock(0).Hash.To0xString(), '0x996e37358dc369912041f966f8c5d8d3a8255ba5dcbd3447f8a82b55db869099')
+        self.assertTrue(Blockchain.GetInstance.GetBlock(0).Hash.To0xString(), '0x996e37358dc369912041f966f8c5d8d3a8255ba5dcbd3447f8a82b55db869099')
 
     def test_GET_request_bad_params(self):
         req = "/?jsonrpc=2.0&method=getblockcount&param=[]&id=2"  # "params" is misspelled
@@ -176,13 +176,13 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getblockcount")
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(GetBlockchain().Height + 1, res["result"])
+        self.assertEqual(Blockchain.GetInstance().Height + 1, res["result"])
 
         # test GET requests ...next we will test a complex method; see test_sendmany_complex
         req = self._gen_get_rpc_req("getblockcount")
         mock_req = mock_get_request(req)
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(GetBlockchain().Height + 1, res["result"])
+        self.assertEqual(Blockchain.GetInstance().Height + 1, res["result"])
 
     def test_getblockhash(self):
         req = self._gen_post_rpc_req("getblockhash", params=[2])
@@ -240,7 +240,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getassetstate", params=[asset_str])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(res['result']['assetId'], '0x%s' % str(GetBlockchain().SystemShare().Hash))
+        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.GetInstance().SystemShare().Hash))
         self.assertEqual(res['result']['admin'], 'Abf2qMs1pzQb8kYk9RuxtUb9jtRKJVuBJt')
         self.assertEqual(res['result']['available'], 10000000000000000)
 
@@ -249,7 +249,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getassetstate", params=[asset_str])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(res['result']['assetId'], '0x%s' % str(GetBlockchain().SystemCoin().Hash))
+        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.GetInstance().SystemCoin().Hash))
         self.assertEqual(res['result']['amount'], 10000000000000000)
         self.assertEqual(res['result']['admin'], 'AWKECj9RD8rS8RPcpCgYVjk1DeYyHwxZm3')
 
@@ -299,7 +299,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
 
         self.assertEqual(res['result']['index'], 10)
         self.assertEqual(res['result']['hash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
-        self.assertEqual(res['result']['confirmations'], GetBlockchain().Height - 10 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 10 + 1)
         self.assertEqual(res['result']['nextblockhash'], '0x2b1c78633dae7ab81f64362e0828153079a17b018d779d0406491f84c27b086f')
 
     def test_get_block_hash(self):
@@ -308,7 +308,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
 
         self.assertEqual(res['result']['index'], 11)
-        self.assertEqual(res['result']['confirmations'], GetBlockchain().Height - 11 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 11 + 1)
         self.assertEqual(res['result']['previousblockhash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
 
     def test_get_block_hash_0x(self):
@@ -502,7 +502,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
 
     def test_get_unspents(self):
         u = UInt256.ParseString('f999c36145a41306c846ea80290416143e8e856559818065be3f4e143c60e43a')
-        unspents = GetBlockchain().GetAllUnspent(u)
+        unspents = Blockchain.GetInstance().GetAllUnspent(u)
         self.assertEqual(len(unspents), 1)
 
     def test_gettxout(self):
@@ -1099,7 +1099,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         amount = 1
         net_fee = 0.005
         change_addr = 'AGYaEi3W6ndHPUmW7T12FFfsbQ6DWymkEm'
-        address_from_account_state = GetBlockchain().GetAccountState(address_from).ToJson()
+        address_from_account_state = Blockchain.GetInstance().GetAccountState(address_from).ToJson()
         address_from_gas = next(filter(lambda b: b['asset'] == '0x602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7',
                                        address_from_account_state['balances']))
         address_from_gas_bal = address_from_gas['value']
@@ -1670,7 +1670,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
         self.assertEqual(res['result']['index'], 10)
         self.assertEqual(res['result']['hash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
-        self.assertEqual(res['result']['confirmations'], GetBlockchain().Height - 10 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 10 + 1)
         self.assertEqual(res['result']['nextblockhash'], '0x2b1c78633dae7ab81f64362e0828153079a17b018d779d0406491f84c27b086f')
 
     def test_getblockheader_hash(self):
@@ -1679,7 +1679,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
 
         self.assertEqual(res['result']['index'], 11)
-        self.assertEqual(res['result']['confirmations'], GetBlockchain().Height - 11 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 11 + 1)
         self.assertEqual(res['result']['previousblockhash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
 
     def test_getblockheader_hash_0x(self):
@@ -1689,7 +1689,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         self.assertEqual(res['result']['index'], 11)
 
     def test_getblockheader_hash_failure(self):
-        req = self._gen_post_rpc_req("getblockheader", params=[GetBlockchain().Height + 1, 1])
+        req = self._gen_post_rpc_req("getblockheader", params=[Blockchain.GetInstance().Height + 1, 1])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
         self.assertTrue('error' in res)
@@ -1705,7 +1705,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         output = binascii.unhexlify(res['result'])
         blockheader = Helper.AsSerializableWithType(output, 'neo.Core.Header.Header')
         self.assertEqual(blockheader.Index, 11)
-        self.assertEqual(str(blockheader.Hash), GetBlockchain().GetBlockHash(11).decode('utf8'))
+        self.assertEqual(str(blockheader.Hash), Blockchain.GetInstance.GetBlockHash(11).decode('utf8'))
 
     def test_gettransactionheight(self):
         txid = 'f999c36145a41306c846ea80290416143e8e856559818065be3f4e143c60e43a'

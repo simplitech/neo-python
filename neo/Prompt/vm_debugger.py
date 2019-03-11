@@ -1,14 +1,14 @@
 from prompt_toolkit import prompt
 from neo.Prompt.InputParser import InputParser
-from neo.SmartContract.ContractParameter import ContractParameter
-from neo.SmartContract.ContractParameterType import ContractParameterType
+from neocore.Core.Contract.ContractParameter import ContractParameter
+from neocore.Core.Contract.ContractParameterType import ContractParameterType
 from boa.compiler import Compiler
 import pprint
 import pdb
 import dis
 import json
 from neo.Settings import settings
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

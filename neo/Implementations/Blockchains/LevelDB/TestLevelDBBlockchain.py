@@ -1,37 +1,32 @@
-from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
-from neo.Core.Blockchain import Blockchain
-from neo.Core.TX.Transaction import TransactionType
-from neo.Implementations.Blockchains.LevelDB.DBCollection import DBCollection
-from neo.Implementations.Blockchains.LevelDB.CachedScriptTable import CachedScriptTable
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.TX.Transaction import TransactionType
+from neocore.Core.Contract.CachedScriptTable import CachedScriptTable
 from neocore.Fixed8 import Fixed8
 from neocore.UInt160 import UInt160
 
-from neo.Core.State.UnspentCoinState import UnspentCoinState
-from neo.Core.State.AccountState import AccountState
-from neo.Core.State.CoinState import CoinState
-from neo.Core.State.SpentCoinState import SpentCoinState, SpentCoinItem
-from neo.Core.State.AssetState import AssetState
-from neo.Core.State.ValidatorState import ValidatorState
-from neo.Core.State.ContractState import ContractState
-from neo.Core.State.StorageItem import StorageItem
-from neo.Implementations.Blockchains.LevelDB.DBPrefix import DBPrefix
+from neocore.Core.State.UnspentCoinState import UnspentCoinState
+from neocore.Core.State.AccountState import AccountState
+from neocore.Core.State.CoinState import CoinState
+from neocore.Core.State.SpentCoinState import SpentCoinState, SpentCoinItem
+from neocore.Core.State.AssetState import AssetState
+from neocore.Core.State.ValidatorState import ValidatorState
+from neocore.Core.State.ContractState import ContractState
 
-from neo.SmartContract.StateMachine import StateMachine
-from neo.SmartContract.ApplicationEngine import ApplicationEngine
-from neo.SmartContract import TriggerType
+from neocore.Core.Contract.StateMachine import StateMachine
+from neocore.Core.Contract.ApplicationEngine import ApplicationEngine
+from neocore.Core.Contract import TriggerType
 
 
-class TestLevelDBBlockchain(LevelDBBlockchain):
+class TestLevelDBBlockchain(Blockchain):
 
     def Persist(self, block):
-
-        accounts = DBCollection(self._db, DBPrefix.ST_Account, AccountState)
-        unspentcoins = DBCollection(self._db, DBPrefix.ST_Coin, UnspentCoinState)
-        spentcoins = DBCollection(self._db, DBPrefix.ST_SpentCoin, SpentCoinState)
-        assets = DBCollection(self._db, DBPrefix.ST_Asset, AssetState)
-        validators = DBCollection(self._db, DBPrefix.ST_Validator, ValidatorState)
-        contracts = DBCollection(self._db, DBPrefix.ST_Contract, ContractState)
-        storages = DBCollection(self._db, DBPrefix.ST_Storage, StorageItem)
+        accounts = self.dbService.getAccountsCollection()
+        unspentcoins = self.dbService.getCoinsCollection()
+        spentcoins = self.dbService.getSpentCoinsCollection()
+        assets = self.dbService.getAssetsCollection()
+        validators = self.dbService.getValidatorsCollection()
+        contracts = self.dbService.getContractCollection()
+        storages = self.dbService.getStorageCollection()
 
         amount_sysfee = self.GetSysFeeAmount(block.PrevHash) + block.TotalFees().value
         amount_sysfee_bytes = amount_sysfee.to_bytes(8, 'little')

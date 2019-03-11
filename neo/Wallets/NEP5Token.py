@@ -1,16 +1,16 @@
 import binascii
 import traceback
 from decimal import Decimal
-from neo.Core.VerificationCode import VerificationCode
+from neocore.Core.VerificationCode import VerificationCode
 from neocore.Cryptography.Crypto import Crypto
 from neocore.Fixed8 import Fixed8
 from neo.Prompt.Commands.Invoke import TestInvokeContract, test_invoke
 from neo.Prompt import Utils as PromptUtils
 from neocore.UInt160 import UInt160
-from neo.VM.ScriptBuilder import ScriptBuilder
-from neo.SmartContract.ApplicationEngine import ApplicationEngine
-from neo.Core.Mixins import SerializableMixin
-from neo.logging import log_manager
+from neocore.Core.VM.ScriptBuilder import ScriptBuilder
+from neocore.Core.Contract.ApplicationEngine import ApplicationEngine
+from neocore.Core.Mixins import SerializableMixin
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

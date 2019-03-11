@@ -18,7 +18,7 @@ from neorpc.Settings import settings as rpc_settings
 from neo import __version__
 from logging.handlers import RotatingFileHandler
 from logzero import LogFormatter
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

@@ -1,5 +1,5 @@
 from prompt_toolkit import prompt
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
 from neo.Prompt.Utils import get_arg
 from neo.Settings import settings

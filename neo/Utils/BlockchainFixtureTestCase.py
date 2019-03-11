@@ -2,13 +2,17 @@ import tarfile
 import requests
 import shutil
 import os
+
+from neocore.Test.NeoTestCase import NeoTestCase
+
 import neo
-from neo.Utils.NeoTestCase import NeoTestCase
+from neo.Implementations.Blockchains.LevelDB.LevelDBService import LevelDBService
 from neo.Implementations.Blockchains.LevelDB.TestLevelDBBlockchain import TestLevelDBBlockchain
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neo.Implementations.Notifications.LevelDB.NotificationDB import NotificationDB
+from neo.Services.LocalNode import LocalNode
 from neo.Settings import settings
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Network.NodeLeader import NodeLeader
 
 logger = log_manager.getLogger()
@@ -41,17 +45,17 @@ class BlockchainFixtureTestCase(NeoTestCase):
         NodeLeader.Instance().Setup()
 
         # setup Blockchain DB
-        if not os.path.exists(cls.FIXTURE_FILENAME):
-            logger.info(
-                "downloading fixture block database from %s. this may take a while" % cls.FIXTURE_REMOTE_LOC)
+        # if not os.path.exists(cls.FIXTURE_FILENAME):
+        logger.info(
+            "downloading fixture block database from %s. this may take a while" % cls.FIXTURE_REMOTE_LOC)
 
-            response = requests.get(cls.FIXTURE_REMOTE_LOC, stream=True)
+        response = requests.get(cls.FIXTURE_REMOTE_LOC, stream=True)
 
-            response.raise_for_status()
-            os.makedirs(os.path.dirname(cls.FIXTURE_FILENAME), exist_ok=True)
-            with open(cls.FIXTURE_FILENAME, 'wb+') as handle:
-                for block in response.iter_content(1024):
-                    handle.write(block)
+        response.raise_for_status()
+        os.makedirs(os.path.dirname(cls.FIXTURE_FILENAME), exist_ok=True)
+        with open(cls.FIXTURE_FILENAME, 'wb+') as handle:
+            for block in response.iter_content(1024):
+                handle.write(block)
 
         try:
             tar = tarfile.open(cls.FIXTURE_FILENAME)
@@ -65,21 +69,27 @@ class BlockchainFixtureTestCase(NeoTestCase):
             raise Exception("Error downloading fixtures at %s" % cls.leveldb_testpath())
 
         settings.setup_unittest_net()
+        dbServices = LevelDBService(cls.leveldb_testpath())
+        nodeServices = LocalNode(settings, dbServices)
+        blockchain = TestLevelDBBlockchain(nodeServices, nodeServices)
+        Blockchain.DeregisterBlockchain()
+        Blockchain.RegisterBlockchain(blockchain)
+        nodeServices.Initialize()
 
-        cls._blockchain = TestLevelDBBlockchain(path=cls.leveldb_testpath(), skip_version_check=True)
+        cls._blockchain = blockchain
         Blockchain.RegisterBlockchain(cls._blockchain)
 
         # setup Notification DB
-        if not os.path.exists(cls.N_FIXTURE_FILENAME):
-            logger.info(
-                "downloading fixture notification database from %s. this may take a while" % cls.N_FIXTURE_REMOTE_LOC)
+        #if not os.path.exists(cls.N_FIXTURE_FILENAME):
+        logger.info(
+            "downloading fixture notification database from %s. this may take a while" % cls.N_FIXTURE_REMOTE_LOC)
 
-            response = requests.get(cls.N_FIXTURE_REMOTE_LOC, stream=True)
+        response = requests.get(cls.N_FIXTURE_REMOTE_LOC, stream=True)
 
-            response.raise_for_status()
-            with open(cls.N_FIXTURE_FILENAME, 'wb+') as handle:
-                for block in response.iter_content(1024):
-                    handle.write(block)
+        response.raise_for_status()
+        with open(cls.N_FIXTURE_FILENAME, 'wb+') as handle:
+            for block in response.iter_content(1024):
+                handle.write(block)
 
         try:
             tar = tarfile.open(cls.N_FIXTURE_FILENAME)
@@ -99,7 +109,7 @@ class BlockchainFixtureTestCase(NeoTestCase):
     @classmethod
     def tearDownClass(cls):
         # tear down Blockchain DB
-        Blockchain.Default().DeregisterBlockchain()
+        Blockchain.GetInstance().DeregisterBlockchain()
         if cls._blockchain is not None:
             cls._blockchain.Dispose()
 

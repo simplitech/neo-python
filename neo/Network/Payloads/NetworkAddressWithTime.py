@@ -1,7 +1,7 @@
 import ctypes
 from datetime import datetime
 from neocore.IO.Mixins import SerializableMixin
-from neo.Core.Size import Size as s
+from neocore.Core.Size import Size as s
 
 
 class NetworkAddressWithTime(SerializableMixin):

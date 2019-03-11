@@ -7,16 +7,18 @@ Usage:
 import traceback
 import hashlib
 from itertools import groupby
-from base58 import b58decode
-from decimal import Decimal
+from random import Random
+
 from Crypto import Random
 from Crypto.Cipher import AES
+from base58 import b58decode
+from decimal import Decimal
 from threading import RLock
-from neo.Core.TX.Transaction import TransactionType, TransactionOutput, TXFeeError
-from neo.Core.State.CoinState import CoinState
-from neo.Core.Blockchain import Blockchain
-from neo.Core.CoinReference import CoinReference
-from neo.Core.TX.ClaimTransaction import ClaimTransaction
+from neocore.Core.TX.Transaction import TransactionType, TransactionOutput, TXFeeError
+from neocore.Core.State.CoinState import CoinState
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.CoinReference import CoinReference
+from neocore.Core.TX.ClaimTransaction import ClaimTransaction
 from neocore.Cryptography.Helper import scripthash_to_address
 from neocore.Cryptography.Crypto import Crypto
 from neo.Wallets.AddressState import AddressState
@@ -27,9 +29,9 @@ from neo.Settings import settings
 from neocore.Fixed8 import Fixed8
 from neocore.UInt160 import UInt160
 from neocore.UInt256 import UInt256
-from neo.Core.Helper import Helper
+from neocore.Core.Helper import Helper
 from neo.Wallets.utils import to_aes_key
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 
@@ -512,7 +514,7 @@ class Wallet:
         Returns:
             Fixed8: the amount of Gas unavailable to claim.
         """
-        height = Blockchain.Default().Height + 1
+        height = Blockchain.GetInstance().Height + 1
         unspents = self.FindUnspentCoinsByAsset(Blockchain.SystemShare().Hash)
         refs = [coin.Reference for coin in unspents]
         try:
@@ -650,9 +652,9 @@ class Wallet:
         self._lock.acquire()
         try:
             blockcount = 0
-            while self._current_height <= Blockchain.Default().Height and (block_limit == 0 or blockcount < block_limit):
+            while self._current_height <= Blockchain.GetInstance().Height and (block_limit == 0 or blockcount < block_limit):
 
-                block = Blockchain.Default().GetBlockByHeight(self._current_height)
+                block = Blockchain.GetInstance().GetBlockByHeight(self._current_height)
 
                 if block is not None:
                     self.ProcessNewBlock(block)
@@ -1243,7 +1245,7 @@ class Wallet:
         balances = []
         for asset in assets:
             if type(asset) is UInt256:
-                bc_asset = Blockchain.Default().GetAssetState(asset.ToBytes())
+                bc_asset = Blockchain.GetInstance().GetAssetState(asset.ToBytes())
                 total = self.GetBalance(asset).value / Fixed8.D
                 balances.append((bc_asset.GetName(), total))
             elif type(asset) is NEP5Token.NEP5Token:
@@ -1259,10 +1261,10 @@ class Wallet:
             bool: True if wallet is synced.
 
         """
-        if Blockchain.Default().Height == 0:
+        if Blockchain.GetInstance().Height == 0:
             return False
 
-        if (int(100 * self._current_height / Blockchain.Default().Height)) < 100:
+        if (int(100 * self._current_height / Blockchain.GetInstance().Height)) < 100:
             return False
         else:
             return True

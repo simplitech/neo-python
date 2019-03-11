@@ -4,16 +4,16 @@ from neo.Prompt.Commands.LoadSmartContract import LoadContract, GatherContractDe
 from neo.Prompt import Utils as PromptUtils
 from neo.Prompt.Commands.BuildNRun import Build, BuildAndRun, LoadAndRun
 from neo.Prompt.Commands.Invoke import TestInvokeContract, InvokeContract, test_invoke
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neocore.UInt160 import UInt160
-from neo.SmartContract.ContractParameter import ContractParameter
+from neocore.Core.Contract.ContractParameter import ContractParameter
 from prompt_toolkit import prompt
 from neocore.Fixed8 import Fixed8
 from neo.Implementations.Blockchains.LevelDB.DebugStorage import DebugStorage
 from distutils import util
 from neo.Settings import settings
 from neo.Prompt.PromptPrinter import prompt_print as print
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 
@@ -55,9 +55,9 @@ class CommandSCBuild(CommandBase):
             print("Please specify the required parameter")
             return
 
-        Blockchain.Default().Pause()
+        Blockchain.GetInstance().Pause()
         contract_script = Build(arguments)
-        Blockchain.Default().Resume()
+        Blockchain.GetInstance().Resume()
         return contract_script
 
     def command_desc(self):
@@ -74,14 +74,14 @@ class CommandSCBuildRun(CommandBase):
             print("Please specify the required parameters")
             return None, None, None, None
 
-        Blockchain.Default().Pause()
+        Blockchain.GetInstance().Pause()
         try:
             tx, result, total_ops, engine = BuildAndRun(arguments, PromptData.Wallet)
         except TypeError:
             print(f'run `{CommandSC().command_desc().command} {self.command_desc().command} help` to see supported queries')
-            Blockchain.Default().Resume()
+            Blockchain.GetInstance().Resume()
             return None, None, None, None
-        Blockchain.Default().Resume()
+        Blockchain.GetInstance().Resume()
         return tx, result, total_ops, engine
 
     def command_desc(self):
@@ -119,14 +119,14 @@ class CommandSCLoadRun(CommandBase):
             print("Please specify the required parameters")
             return
 
-        Blockchain.Default().Pause()
+        Blockchain.GetInstance().Pause()
         try:
             tx, result, total_ops, engine = LoadAndRun(arguments, PromptData.Wallet)
         except TypeError:
             print(f'run `{CommandSC().command_desc().command} {self.command_desc().command} help` to see supported queries')
-            Blockchain.Default().Resume()
+            Blockchain.GetInstance().Resume()
             return
-        Blockchain.Default().Resume()
+        Blockchain.GetInstance().Resume()
         return tx, result, total_ops, engine
 
     def command_desc(self):

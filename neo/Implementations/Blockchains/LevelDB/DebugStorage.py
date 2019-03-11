@@ -1,8 +1,8 @@
-from neo.Implementations.Blockchains.LevelDB.DBPrefix import DBPrefix
-from neo.Blockchain import GetBlockchain
+from neocore.Core.Blockchain import Blockchain
+
 import plyvel
 from neo.Settings import settings
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger('db')
 
@@ -15,15 +15,15 @@ class DebugStorage:
         return self._db
 
     def reset(self):
-        for key in self._db.iterator(prefix=DBPrefix.ST_Storage, include_value=False):
+        for key in Blockchain.GetInstance().nodeServices.dbService.getStorageListIterator():
             self._db.delete(key)
 
     def clone_from_live(self):
-        clone_db = GetBlockchain()._db.snapshot()
-        for key, value in clone_db.iterator(prefix=DBPrefix.ST_Storage, include_value=True):
+        clone_db = Blockchain.GetInstance().nodeServices.dbService.getSnapshot()
+        for key, value in clone_db.iterator(prefix=Blockchain.GetInstance().nodeServices.dbService.getPrefixStorage(), include_value=True):
             self._db.put(key, value)
 
-    def __init__(self):
+    def __init__(self, db):
 
         try:
             self._db = plyvel.DB(settings.debug_storage_leveldb_path, create_if_missing=True)

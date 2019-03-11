@@ -1,4 +1,5 @@
-from neo.Utils.NeoTestCase import NeoTestCase
+from neocore.Test.NeoTestCase import NeoTestCase
+
 from neo.Network.address import Address
 from datetime import datetime
 

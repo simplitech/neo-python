@@ -2,7 +2,7 @@ import sys
 import binascii
 from neocore.IO.Mixins import SerializableMixin
 from neocore.UInt256 import UInt256
-from neo.Core.Size import GetVarSize
+from neocore.Core.Size import GetVarSize
 
 
 class GetBlocksPayload(SerializableMixin):

@@ -1,10 +1,10 @@
 import datetime
 from neocore.IO.Mixins import SerializableMixin
 from neo.Network.Payloads.NetworkAddressWithTime import NetworkAddressWithTime
-from neo.Core.Blockchain import Blockchain
-from neo.Core.Size import Size as s
-from neo.Core.Size import GetVarSize
-from neo.logging import log_manager
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.Size import Size as s
+from neocore.Core.Size import GetVarSize
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 
@@ -36,8 +36,8 @@ class VersionPayload(SerializableMixin):
             self.Nonce = nonce
             self.UserAgent = userAgent
 
-            if Blockchain.Default() is not None and Blockchain.Default().Height is not None:
-                self.StartHeight = Blockchain.Default().Height
+            if Blockchain.GetInstance() is not None and Blockchain.GetInstance().Height is not None:
+                self.StartHeight = Blockchain.GetInstance().Height
 
             self.Relay = True
 

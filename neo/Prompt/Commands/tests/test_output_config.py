@@ -1,8 +1,7 @@
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Prompt.Commands.Config import start_output_config
 from mock import patch
 from neo.Utils.NeoTestCase import NeoTestCase
-from neo.Prompt.PromptPrinter import pp
 import logging
 import io
 

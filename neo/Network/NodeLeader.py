@@ -1,20 +1,19 @@
 import random
 import time
 from typing import List
-from neo.Core.Block import Block
-from neo.Core.Blockchain import Blockchain as BC
+from neocore.Core.Block import Block
+from neocore.Core.Blockchain import Blockchain as BC
 from neo.Implementations.Blockchains.LevelDB.TestLevelDBBlockchain import TestLevelDBBlockchain
-from neo.Core.TX.Transaction import Transaction
-from neo.Core.TX.MinerTransaction import MinerTransaction
+from neocore.Core.TX.Transaction import Transaction
+from neocore.Core.TX.MinerTransaction import MinerTransaction
 from neo.Network.NeoNode import NeoNode, HEARTBEAT_BLOCKS
 from neo.Settings import settings
-from twisted.internet.protocol import ReconnectingClientFactory, Factory
+from twisted.internet.protocol import Factory
 from twisted.internet import error
-from twisted.internet import task
 from twisted.internet import reactor as twisted_reactor
 from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.endpoints import TCP4ClientEndpoint, connectProtocol, TCP4ServerEndpoint
-from neo.logging import log_manager
+from neocore.logging import log_manager
 from neo.Network.address import Address
 from neo.Network.Utils import LoopingCall, hostname_to_ip, is_ip_address
 
@@ -146,7 +145,7 @@ class NodeLeader:
 
     def start_blockheight_loop(self):
         self.stop_blockheight_loop()
-        self.CurrentBlockheight = BC.Default().Height
+        self.CurrentBlockheight = BC.GetInstance().Height
         self.blockheight_loop = LoopingCall(self.BlockheightCheck, clock=self.reactor)
         self.blockheight_loop_deferred = self.blockheight_loop.start(240, now=False)
         self.blockheight_loop_deferred.addErrback(self.OnBlockheightcheckError)
@@ -205,7 +204,7 @@ class NodeLeader:
 
     def check_bcr_catchup(self):
         """we're exceeding data request speed vs receive + process"""
-        logger.debug(f"Checking if BlockRequests has caught up {len(BC.Default().BlockRequests)}")
+        logger.debug(f"Checking if BlockRequests has caught up {len(BC.GetInstance().BlockRequests)}")
 
         # test, perhaps there's some race condition between slow startup and throttle sync, otherwise blocks will never go down
         for peer in self.Peers:  # type: NeoNode
@@ -213,7 +212,7 @@ class NodeLeader:
             peer.stop_peerinfo_loop(cancel=False)
             peer.stop_header_loop(cancel=False)
 
-        if len(BC.Default().BlockRequests) > 0:
+        if len(BC.GetInstance().BlockRequests) > 0:
             for peer in self.Peers:
                 peer.keep_alive()
                 peer.health_check(HEARTBEAT_BLOCKS)
@@ -224,7 +223,7 @@ class NodeLeader:
 
                 print(f"{peer.prefix} request count: {peer_bcr_len}")
                 if peer_bcr_len == 1:
-                    next_hash = BC.Default().GetHeaderHash(self.CurrentBlockheight + 1)
+                    next_hash = BC.GetInstance().GetHeaderHash(self.CurrentBlockheight + 1)
                     print(f"{peer.prefix} {peer.myblockrequests} {next_hash}")
         else:
             # we're done catching up. Stop own loop and restart peers
@@ -511,13 +510,13 @@ class NodeLeader:
             return False
 
         if type(inventory) is Block:
-            if BC.Default() is None:
+            if BC.GetInstance() is None:
                 return False
 
-            if BC.Default().ContainsBlock(inventory.Index):
+            if BC.GetInstance().ContainsBlock(inventory.Index):
                 return False
 
-            if not BC.Default().AddBlock(inventory):
+            if not BC.GetInstance().AddBlock(inventory):
                 return False
 
         else:
@@ -542,7 +541,7 @@ class NodeLeader:
             relayed |= peer.Relay(inventory)
 
         if len(self.Peers) == 0:
-            if type(BC.Default()) is TestLevelDBBlockchain:
+            if type(BC.GetInstance()) is TestLevelDBBlockchain:
                 # mock a true result for tests
                 return True
 
@@ -602,13 +601,13 @@ class NodeLeader:
         Returns:
             bool: True if successfully added. False otherwise.
         """
-        if BC.Default() is None:
+        if BC.GetInstance() is None:
             return False
 
         if tx.Hash.ToBytes() in self.MemPool.keys():
             return False
 
-        if BC.Default().ContainsTransaction(tx.Hash):
+        if BC.GetInstance().ContainsTransaction(tx.Hash):
             return False
 
         if not tx.Verify(self.MemPool.values()):
@@ -629,10 +628,10 @@ class NodeLeader:
         Returns:
             bool: True if successfully removed. False otherwise.
         """
-        if BC.Default() is None:
+        if BC.GetInstance() is None:
             return False
 
-        if not BC.Default().ContainsTransaction(tx.Hash):
+        if not BC.GetInstance().ContainsTransaction(tx.Hash):
             return False
 
         if tx.Hash.ToBytes() in self.MemPool:
@@ -660,10 +659,10 @@ class NodeLeader:
         """
         Checks the current blockheight and finds the peer that prevents advancement
         """
-        if self.CurrentBlockheight == BC.Default().Height:
+        if self.CurrentBlockheight == BC.GetInstance().Height:
             if len(self.Peers) > 0:
                 logger.debug("Blockheight is not advancing ...")
-                next_hash = BC.Default().GetHeaderHash(self.CurrentBlockheight + 1)
+                next_hash = BC.GetInstance().GetHeaderHash(self.CurrentBlockheight + 1)
                 culprit_found = False
                 for peer in self.Peers:
                     if next_hash in peer.myblockrequests:
@@ -676,7 +675,7 @@ class NodeLeader:
                     for peer in self.Peers:
                         peer.Disconnect()
         else:
-            self.CurrentBlockheight = BC.Default().Height
+            self.CurrentBlockheight = BC.GetInstance().Height
 
     def clientConnectionFailed(self, err, address: Address):
         """

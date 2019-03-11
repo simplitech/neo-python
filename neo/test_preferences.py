@@ -1,7 +1,9 @@
 import json
 from tempfile import NamedTemporaryFile
 from json.decoder import JSONDecodeError
-from neo.Utils.NeoTestCase import NeoTestCase
+
+from neocore.Test.NeoTestCase import NeoTestCase
+
 from neo.UserPreferences import UserPreferencesHolder, PREFERENCES_DEFAULT
 
 

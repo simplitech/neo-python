@@ -4,19 +4,19 @@ from neocore.Fixed8 import Fixed8
 from neocore.UInt160 import UInt160
 from prompt_toolkit import prompt
 from decimal import Decimal
-from neo.Core.TX.TransactionAttribute import TransactionAttribute
+from neocore.Core.TX.TransactionAttribute import TransactionAttribute
 import binascii
 from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
 from neo.Prompt.PromptData import PromptData
 from neo.Prompt import Utils as PromptUtils
 from neo.Implementations.Wallets.peewee.Models import NEP5Token as ModelNEP5Token
 from neo.Implementations.Notifications.LevelDB.NotificationDB import NotificationDB
-from neo.Core.TX.TransactionAttribute import TransactionAttributeUsage
+from neocore.Core.TX.TransactionAttribute import TransactionAttributeUsage
 from neocore.Utils import isValidPublicAddress
 import peewee
 import traceback
 from neo.Prompt.PromptPrinter import prompt_print as print
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

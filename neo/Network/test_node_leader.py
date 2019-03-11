@@ -3,14 +3,14 @@ from neo.Network.NodeLeader import NodeLeader
 from neo.Network.NeoNode import NeoNode
 from mock import patch
 from neo.Settings import settings
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neocore.UInt160 import UInt160
 from neocore.Fixed8 import Fixed8
 from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
 from neo.Wallets.utils import to_aes_key
 from neo.SmartContract.ContractParameterContext import ContractParametersContext
-from neo.Core.TX.Transaction import ContractTransaction, TransactionOutput, TXFeeError
-from neo.Core.TX.MinerTransaction import MinerTransaction
+from neocore.Core.TX.Transaction import ContractTransaction, TransactionOutput, TXFeeError
+from neocore.Core.TX.MinerTransaction import MinerTransaction
 from twisted.trial import unittest as twisted_unittest
 from twisted.test import proto_helpers
 from twisted.internet.address import IPv4Address
@@ -236,7 +236,7 @@ class LeaderTestCase(WalletFixtureTestCase):
 
         self.assertFalse(res)
 
-        block = Blockchain.Default().GenesisBlock()
+        block = Blockchain.GetInstance().GenesisBlock()
 
         res2 = leader.InventoryReceived(block)
 

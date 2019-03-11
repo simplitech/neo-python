@@ -1,9 +1,9 @@
 import binascii
 from neocore.UInt256 import UInt256
 from neocore.IO.Mixins import SerializableMixin
-from neo.Core.Size import Size as s
-from neo.Core.Size import GetVarSize
-from neo.logging import log_manager
+from neocore.Core.Size import Size as s
+from neocore.Core.Size import GetVarSize
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 

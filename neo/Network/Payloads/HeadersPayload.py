@@ -1,6 +1,6 @@
 from neocore.IO.Mixins import SerializableMixin
 import sys
-from neo.Core.Size import GetVarSize
+from neocore.Core.Size import GetVarSize
 from neocore.IO.BinaryWriter import BinaryWriter
 
 

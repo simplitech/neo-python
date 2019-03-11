@@ -1,7 +1,8 @@
-from neo.Utils.NeoTestCase import NeoTestCase
+from neocore.Test.NeoTestCase import NeoTestCase
+
 from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
-from neo.Core.Blockchain import Blockchain
-from neo.IO.Helper import Helper
+from neocore.Core.Blockchain import Blockchain
+from neocore.IO.Helper import Helper
 from neo.Settings import settings
 import shutil
 import binascii
@@ -46,7 +47,7 @@ class LevelDBTest(NeoTestCase):
 
     def test_add_header(self):
         hexdata = binascii.unhexlify(self.block_one_raw)
-        block_one = Helper.AsSerializableWithType(hexdata, 'neo.Core.Block.Block')
+        block_one = Helper.AsSerializableWithType(hexdata, 'neocore.Core.Block.Block')
 
         if settings.MAGIC == 56753:
             self.assertEqual(self._blockchain.CurrentHeaderHash, b'996e37358dc369912041f966f8c5d8d3a8255ba5dcbd3447f8a82b55db869099')

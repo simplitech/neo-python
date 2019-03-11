@@ -1,5 +1,5 @@
 from neo.Utils.BlockchainFixtureTestCase import BlockchainFixtureTestCase
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neo.Settings import settings
 import os
 
@@ -21,15 +21,15 @@ class LevelDBBlockchainTest(BlockchainFixtureTestCase):
 
         # test header index length mismatch
         # save index to restore later
-        saved = self._blockchain._header_index
-        self._blockchain._header_index = self._blockchain._header_index[:10]
+        saved = self._blockchain.GetHeaderIndex()
+        self._blockchain.SetHeaderIndex(self._blockchain.GetHeaderIndex()[:10])
         result = self._blockchain.GetBlockHash(100)
         self.assertEqual(result, None)
-        self._blockchain._header_index = saved
+        self._blockchain.SetHeaderIndex(saved)
 
         # finally test correct retrieval
         result = self._blockchain.GetBlockHash(100)
-        self.assertEqual(result, self._blockchain._header_index[100])
+        self.assertEqual(result, self._blockchain.GetHeaderIndex()[100])
 
     def test_GetBlockByHeight(self):
         # test correct retrieval
@@ -44,13 +44,13 @@ class LevelDBBlockchainTest(BlockchainFixtureTestCase):
     def test_GetAccountState(self):
         # test passing an address
         addr = "AK2nJJpJr6o664CWJKi1QRXjqeic2zRp8y"
-        acct = Blockchain.Default().GetAccountState(addr)
+        acct = Blockchain.GetInstance().GetAccountState(addr)
         acct = acct.ToJson()
         self.assertIn('balances', acct.keys())
 
         # test failure
         addr = "AK2nJJpJr6o664CWJKi1QRXjqeic2zRp81"
-        acct = Blockchain.Default().GetAccountState(addr)
+        acct = Blockchain.GetInstance().GetAccountState(addr)
         self.assertIsNone(acct)
 
     def test_GetHeaderBy(self):
@@ -76,5 +76,5 @@ class LevelDBBlockchainTest(BlockchainFixtureTestCase):
         self.assertEqual(block, None)
 
     def test_ShowAllAssets(self):
-        assets = Blockchain.Default().ShowAllAssets()
+        assets = Blockchain.GetInstance().ShowAllAssets()
         self.assertEqual(len(assets), 2)

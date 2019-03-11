@@ -1,28 +1,27 @@
 #!/usr/bin/env python
 import binascii
 
-from playhouse.migrate import SqliteMigrator, BooleanField, migrate
 from .PWDatabase import PWDatabase
 from neo.Wallets.Wallet import Wallet
 from neo.Wallets.Coin import Coin as WalletCoin
-from neo.SmartContract.Contract import Contract as WalletContract
-from neo.IO.Helper import Helper
-from neo.Core.Helper import Helper as CoreHelper
-from neo.Core.Blockchain import Blockchain
-from neo.Core.CoinReference import CoinReference
-from neo.Core.TX.Transaction import TransactionOutput
-from neo.Core.TX.Transaction import Transaction as CoreTransaction
+from neocore.Core.Contract.Contract import Contract as WalletContract
+from neocore.IO.Helper import Helper
+from neocore.Core.Helper import Helper as CoreHelper
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.CoinReference import CoinReference
+from neocore.Core.TX.Transaction import TransactionOutput
+from neocore.Core.TX.Transaction import Transaction as CoreTransaction
 from neocore.KeyPair import KeyPair as WalletKeyPair
 from neo.Wallets.NEP5Token import NEP5Token as WalletNEP5Token
 from neocore.Cryptography.Crypto import Crypto
 from neocore.UInt160 import UInt160
 from neocore.Fixed8 import Fixed8
 from neocore.UInt256 import UInt256
-from neo.Wallets.Coin import CoinState
+from neocore.Core.State.CoinState import CoinState
 from neo.Implementations.Wallets.peewee.Models import Account, Address, Coin, \
     Contract, Key, Transaction, \
     TransactionInfo, NEP5Token, NamedAddress, VINHold
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger()
 
@@ -466,10 +465,10 @@ class UserWallet(Wallet):
         tokens = list(self._tokens.values())
         assets = assets + tokens
 
-        if Blockchain.Default().Height == 0:
+        if Blockchain.GetInstance().Height == 0:
             percent_synced = 0
         else:
-            percent_synced = int(100 * self._current_height / Blockchain.Default().Height)
+            percent_synced = int(100 * self._current_height / Blockchain.GetInstance().Height)
 
         jsn = {}
         jsn['path'] = self._path
@@ -479,7 +478,7 @@ class UserWallet(Wallet):
         for addr in Address.select():
             logger.info("Script hash %s %s" % (addr.ScriptHash, type(addr.ScriptHash)))
             addr_str = Crypto.ToAddress(UInt160(data=addr.ScriptHash))
-            acct = Blockchain.Default().GetAccountState(addr_str)
+            acct = Blockchain.GetInstance().GetAccountState(addr_str)
             token_balances = self.TokenBalancesForAddress(addr_str)
             if acct:
                 json = acct.ToJson()
@@ -498,7 +497,7 @@ class UserWallet(Wallet):
         watch_balances = []
         for asset in assets:
             if type(asset) is UInt256:
-                bc_asset = Blockchain.Default().GetAssetState(asset.ToBytes())
+                bc_asset = Blockchain.GetInstance().GetAssetState(asset.ToBytes())
                 total = self.GetBalance(asset).value / Fixed8.D
                 watch_total = self.GetBalance(asset, CoinState.WatchOnly).value / Fixed8.D
                 balances.append("[%s]: %s " % (bc_asset.GetName(), total))

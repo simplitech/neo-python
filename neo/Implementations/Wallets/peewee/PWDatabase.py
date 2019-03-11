@@ -1,6 +1,6 @@
 import logging
 from peewee import Proxy, SqliteDatabase
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger('peewee')
 log_manager.config_stdio([('peewee', logging.ERROR)])

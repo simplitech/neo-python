@@ -1,4 +1,7 @@
-import plyvel
+from itertools import groupby
+
+from neocore.IO.DBService import DBService
+from neocore.Services.BlockchainService import NodeServices
 import binascii
 from neocore.Core.Blockchain import Blockchain
 from neocore.Core.Header import Header
@@ -7,9 +10,8 @@ from neocore.Core.TX.Transaction import Transaction, TransactionType
 from neocore.IO.BinaryWriter import BinaryWriter
 from neocore.IO.BinaryReader import BinaryReader
 from neocore.IO.MemoryStream import StreamManager
-from neocore.Services.BlockchainService import NodeServices
 
-from neocore.IO.DBCollection import DBCollection
+from neo import Settings
 from neocore.Core.Contract.CachedScriptTable import CachedScriptTable
 from neocore.Fixed8 import Fixed8
 from neocore.UInt160 import UInt160
@@ -22,8 +24,6 @@ from neocore.Core.State.SpentCoinState import SpentCoinState, SpentCoinItem, Spe
 from neocore.Core.State.AssetState import AssetState
 from neocore.Core.State.ValidatorState import ValidatorState
 from neocore.Core.State.ContractState import ContractState
-from neocore.Core.State.StorageItem import StorageItem
-from neo.Implementations.Blockchains.LevelDB.DBPrefix import DBPrefix
 
 from neocore.Core.Contract.StateMachine import StateMachine
 from neocore.Core.Contract.ApplicationEngine import ApplicationEngine
@@ -37,27 +37,185 @@ from neocore.logging import log_manager
 logger = log_manager.getLogger('db')
 
 
-class LevelDBBlockchain(NodeServices):
-    _path = None
-    _db = None
+class LocalNode(NodeServices):
 
-    _header_index = []
-    _block_cache = {}
+    def __init__(self, settings : Settings, dbService : DBService):
+        super(LocalNode, self).__init__(dbService, settings)
+        self.secondsPerBlock = 15
+        self.DECREMENT_INTERVAL = 2000000
+        self.GENERATION_AMOUNT = [8, 7, 6, 5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        self._blockchain = None
+        self._validators = []
+        self._instance = None
+        self._blockrequests = set()
+        self._paused = False
+        self.BlockSearchTries = 0
+        self.CACHELIM = 4000
+        self.CMISSLIM = 5
+        self.LOOPTIME = .1
+        self._header_index = []
+        self._block_cache = {}
+        self._current_block_height = 0
+        self._stored_header_count = 0
+        self._disposed = False
+        self._verify_blocks = False
+        # this is the version of the database
+        # should not be updated for network version changes
+        self._sysversion = b'schema v.0.6.9'
+        self._persisting_block = None
+        self.TXProcessed = 0
+        self.dbService = dbService
 
-    _current_block_height = 0
-    _stored_header_count = 0
+        self.TXProcessed = 0
 
-    _disposed = False
 
-    _verify_blocks = False
+    def Initialize(self, skip_version_check = False, skip_header_check = False):
+        genesisBlock = Blockchain.GetInstance().GenesisBlock()
+        self._header_index.append(genesisBlock.Header.Hash.ToBytes())
+        # if(self.GetBlock(0) is None):
+        #     self.Persist(genesisBlock)
 
-    # this is the version of the database
-    # should not be updated for network version changes
-    _sysversion = b'schema v.0.6.9'
+        version = self.dbService.getSystemVersion()
+        if skip_version_check:
+            self.dbService.updateSystemVersion(self._sysversion)
+            version = self._sysversion
 
-    _persisting_block = None
+        if version == self._sysversion:  # or in the future, if version doesn't equal the current version...
+            ba = bytearray(self.dbService.get(self.dbService.getKeyCurrentBlock()))
+            self._current_block_height = int.from_bytes(ba[-4:], 'little')
 
-    TXProcessed = 0
+            if not skip_header_check:
+                ba = bytearray(self.CurrentHeader)
+                current_header_height = int.from_bytes(ba[-4:], 'little')
+                current_header_hash = bytes(ba[:64].decode('utf-8'), encoding='utf-8')
+                hashes = []
+                try:
+                    for key, value in self.dbService.getHeaderListIterator():
+                        ms = StreamManager.GetStream(value)
+                        reader = BinaryReader(ms)
+                        hlist = reader.Read2000256List()
+                        key = int.from_bytes(key[-4:], 'little')
+                        hashes.append({'k': key, 'v': hlist})
+                        StreamManager.ReleaseStream(ms)
+                except Exception as e:
+                    logger.info("Could not get stored header hash list: %s " % e)
+
+                if len(hashes):
+                    hashes.sort(key=lambda x: x['k'])
+                    genstr = genesisBlock.Hash.ToBytes()
+                    for hlist in hashes:
+
+                        for hash in hlist['v']:
+                            if hash != genstr:
+                                self._header_index.append(hash)
+                            self._stored_header_count += 1
+
+                if self._stored_header_count == 0:
+                    logger.info("Current stored headers empty, re-creating from stored blocks...")
+                    headers = []
+                    for key, value in self.dbService.getBlockListIterator():
+                        dbhash = bytearray(value)[8:]
+                        headers.append(Header.FromTrimmedData(binascii.unhexlify(dbhash), 0))
+
+                    headers.sort(key=lambda h: h.Index)
+                    for h in headers:
+                        if h.Index > 0:
+                            self._header_index.append(h.Hash.ToBytes())
+
+                    # this will trigger the write of stored headers
+                    if len(headers):
+                        self.OnAddHeader(headers[-1])
+
+                elif current_header_height > self._stored_header_count:
+
+                    try:
+                        hash = current_header_hash
+                        targethash = self._header_index[-1]
+
+                        newhashes = []
+                        while hash != targethash:
+                            header = self.GetHeader(hash)
+                            newhashes.insert(0, header)
+                            hash = header.PrevHash.ToBytes()
+
+                        self.AddHeaders(newhashes)
+                    except Exception as e:
+                        pass
+
+        elif version is None:
+            self.Persist(genesisBlock)
+            self.dbService.updateSystemVersion(self._sysversion)
+        else:
+            logger.error("\n\n")
+            logger.warning("Database schema has changed from %s to %s.\n" % (version, self._sysversion))
+            logger.warning(
+                "You must either resync from scratch, or use the np-bootstrap command to bootstrap the chain.")
+
+            try:
+                res = prompt(
+                    "Type 'continue' to erase your current database and sync from new. Otherwise this program will exit:\n> ")
+            except KeyboardInterrupt:
+                res = False
+            if res == 'continue':
+                with self.dbService.getWriter() as wb:
+                    for key, value in self.dbService.getDBIterator():
+                        wb.delete(key)
+
+                self.Persist(genesisBlock)
+                self.dbService.updateSystemVersion(self._sysversion)
+            else:
+                raise Exception("Database schema changed")
+
+    def GetAccountState(self, address, print_all_accounts=False):
+        if type(address) is str:
+            try:
+                address = address.encode('utf-8')
+            except Exception as e:
+                logger.info("could not convert argument to bytes :%s " % e)
+                return None
+
+        accounts = self.dbService.getAccountsCollection()
+        acct = accounts.TryGet(keyval=address)
+        return acct
+
+    def GetStorageItem(self, storage_key):
+        storages = self.dbService.getStorageCollection()
+        item = storages.TryGet(storage_key.ToArray())
+        return item
+
+    def GetContract(self, hash):
+        if type(hash) is str:
+            try:
+                hash = UInt160.ParseString(hash).ToBytes()
+            except Exception as e:
+                logger.info("could not convert argument to bytes :%s " % e)
+                return None
+
+        contracts = self.dbService.getContractCollection()
+        contract = contracts.TryGet(keyval=hash)
+        return contract
+
+    def CalculateBonus(inputs, height_end):
+        unclaimed = []
+
+        for hash, group in groupby(inputs, lambda x: x.PrevHash):
+            tx, height_start = Blockchain.GetInstance().GetTransaction(hash)
+
+            if tx is None:
+                raise Exception("Could Not calculate bonus")
+
+            if height_start == height_end:
+                continue
+
+            for coinref in group:
+                if coinref.PrevIndex >= len(tx.outputs) or tx.outputs[coinref.PrevIndex].AssetId != Blockchain.SystemShare().Hash:
+                    raise Exception("Invalid coin reference")
+                spent_coin = SpentCoin(output=tx.outputs[coinref.PrevIndex], start_height=height_start,
+                                       end_height=height_end)
+                unclaimed.append(spent_coin)
+
+        return Blockchain.CalculateBonusInternal(unclaimed)
+
 
     @property
     def CurrentBlockHash(self):
@@ -96,123 +254,15 @@ class LevelDBBlockchain(NodeServices):
         return self.GetBlockByHeight(self.Height)
 
     @property
+    def CurrentHeader(self):
+        return self.dbService.getCurrentHeader()
+
+    @property
     def Path(self):
         return self._path
 
-    def __init__(self, path, db_provider, skip_version_check=False, skip_header_check=False):
-        super(LevelDBBlockchain, self).__init__()
-        self._path = path
-
-        self._header_index = []
-        self._header_index.append(Blockchain.GenesisBlock().Header.Hash.ToBytes())
-
-        self.TXProcessed = 0
-        self._dbProvider = db_provider
-
-        try:
-
-            self._db = plyvel.DB(self._path, create_if_missing=True)
-            logger.info("Created Blockchain DB at %s " % self._path)
-        except Exception as e:
-            logger.info("leveldb unavailable, you may already be running this process: %s " % e)
-            raise Exception('Leveldb Unavailable')
-
-        version = self._db.get(DBPrefix.SYS_Version)
-
-        if skip_version_check:
-            self._db.put(DBPrefix.SYS_Version, self._sysversion)
-            version = self._sysversion
-
-        if version == self._sysversion:  # or in the future, if version doesn't equal the current version...
-
-            ba = bytearray(self._db.get(DBPrefix.SYS_CurrentBlock, 0))
-            self._current_block_height = int.from_bytes(ba[-4:], 'little')
-
-            if not skip_header_check:
-                ba = bytearray(self._db.get(DBPrefix.SYS_CurrentHeader, 0))
-                current_header_height = int.from_bytes(ba[-4:], 'little')
-                current_header_hash = bytes(ba[:64].decode('utf-8'), encoding='utf-8')
-
-                hashes = []
-                try:
-                    for key, value in self._db.iterator(prefix=DBPrefix.IX_HeaderHashList):
-                        ms = StreamManager.GetStream(value)
-                        reader = BinaryReader(ms)
-                        hlist = reader.Read2000256List()
-                        key = int.from_bytes(key[-4:], 'little')
-                        hashes.append({'k': key, 'v': hlist})
-                        StreamManager.ReleaseStream(ms)
-                except Exception as e:
-                    logger.info("Could not get stored header hash list: %s " % e)
-
-                if len(hashes):
-                    hashes.sort(key=lambda x: x['k'])
-                    genstr = Blockchain.GenesisBlock().Hash.ToBytes()
-                    for hlist in hashes:
-
-                        for hash in hlist['v']:
-                            if hash != genstr:
-                                self._header_index.append(hash)
-                            self._stored_header_count += 1
-
-                if self._stored_header_count == 0:
-                    logger.info("Current stored headers empty, re-creating from stored blocks...")
-                    headers = []
-                    for key, value in self._db.iterator(prefix=DBPrefix.DATA_Block):
-                        dbhash = bytearray(value)[8:]
-                        headers.append(Header.FromTrimmedData(binascii.unhexlify(dbhash), 0))
-
-                    headers.sort(key=lambda h: h.Index)
-                    for h in headers:
-                        if h.Index > 0:
-                            self._header_index.append(h.Hash.ToBytes())
-
-                    # this will trigger the write of stored headers
-                    if len(headers):
-                        self.OnAddHeader(headers[-1])
-
-                elif current_header_height > self._stored_header_count:
-
-                    try:
-                        hash = current_header_hash
-                        targethash = self._header_index[-1]
-
-                        newhashes = []
-                        while hash != targethash:
-                            header = self.GetHeader(hash)
-                            newhashes.insert(0, header)
-                            hash = header.PrevHash.ToBytes()
-
-                        self.AddHeaders(newhashes)
-                    except Exception as e:
-                        pass
-
-        elif version is None:
-            self.Persist(Blockchain.GenesisBlock())
-            self._db.put(DBPrefix.SYS_Version, self._sysversion)
-        else:
-            logger.error("\n\n")
-            logger.warning("Database schema has changed from %s to %s.\n" % (version, self._sysversion))
-            logger.warning("You must either resync from scratch, or use the np-bootstrap command to bootstrap the chain.")
-
-            try:
-                res = prompt("Type 'continue' to erase your current database and sync from new. Otherwise this program will exit:\n> ")
-            except KeyboardInterrupt:
-                res = False
-            if res == 'continue':
-
-                with self._db.write_batch() as wb:
-                    for key, value in self._db.iterator():
-                        wb.delete(key)
-
-                self.Persist(Blockchain.GenesisBlock())
-                self._db.put(DBPrefix.SYS_Version, self._sysversion)
-
-            else:
-                raise Exception("Database schema changed")
-
     def GetStates(self, prefix, classref):
-        return DBCollection(self._db, prefix, classref)
+        return self.dbService.GetStates(prefix, classref)
 
     def GetAccountState(self, address, print_all_accounts=False):
         if type(address) is str:
@@ -222,19 +272,19 @@ class LevelDBBlockchain(NodeServices):
                 logger.info("could not convert argument to bytes :%s " % e)
                 return None
 
-        accounts = DBCollection(self._db, DBPrefix.ST_Account, AccountState)
+        accounts = self.dbService.getAccountsCollection()
         acct = accounts.TryGet(keyval=address)
 
         return acct
 
     def GetStorageItem(self, storage_key):
-        storages = DBCollection(self._db, DBPrefix.ST_Storage, StorageItem)
+        storages = self.dbService.getStorageCollection()
         item = storages.TryGet(storage_key.ToArray())
         return item
 
     def SearchContracts(self, query):
         res = []
-        contracts = DBCollection(self._db, DBPrefix.ST_Contract, ContractState)
+        contracts = self.dbService.getContractCollection()
         keys = contracts.Keys
 
         query = query.casefold()
@@ -257,18 +307,17 @@ class LevelDBBlockchain(NodeServices):
         return res
 
     def ShowAllContracts(self):
-        contracts = DBCollection(self._db, DBPrefix.ST_Contract, ContractState)
+        contracts = self.dbService.getContractCollection()
         keys = contracts.Keys
         return keys
 
 
     def GetAllSpentCoins(self):
-        coins = DBCollection(self._db, DBPrefix.ST_SpentCoin, SpentCoinState)
+        coins = self.dbService.getSpentCoinsCollection()
         return coins.Keys
 
     def GetUnspent(self, hash, index):
-
-        coins = DBCollection(self._db, DBPrefix.ST_Coin, UnspentCoinState)
+        coins = self.dbService.getCoinsCollection()
 
         state = coins.TryGet(hash)
 
@@ -287,19 +336,16 @@ class LevelDBBlockchain(NodeServices):
         if type(tx_hash) is not bytes:
             tx_hash = bytes(tx_hash.encode('utf-8'))
 
-        coins = DBCollection(self._db, DBPrefix.ST_SpentCoin, SpentCoinState)
+        coins = self.dbService.getSpentCoinsCollection()
         result = coins.TryGet(keyval=tx_hash)
 
         return result
 
     def GetAllUnspent(self, hash):
-
         unspents = []
-
-        unspentcoins = DBCollection(self._db, DBPrefix.ST_Coin, UnspentCoinState)
+        unspentcoins = self.dbService.getCoinsCollection()
 
         state = unspentcoins.TryGet(keyval=hash.ToBytes())
-
         if state:
             tx, height = self.GetTransaction(hash)
 
@@ -316,7 +362,7 @@ class LevelDBBlockchain(NodeServices):
             return None
 
         out = {}
-        coins = DBCollection(self._db, DBPrefix.ST_SpentCoin, SpentCoinState)
+        coins =  self.dbService.getSpentCoinsCollection()
 
         state = coins.TryGet(keyval=hash.ToBytes())
 
@@ -328,7 +374,7 @@ class LevelDBBlockchain(NodeServices):
 
     def SearchAssetState(self, query):
         res = []
-        assets = DBCollection(self._db, DBPrefix.ST_Asset, AssetState)
+        assets = self.dbService.getAssetsCollection()
         keys = assets.Keys
 
         if query.lower() == "neo":
@@ -357,14 +403,13 @@ class LevelDBBlockchain(NodeServices):
                 logger.info("could not convert argument to bytes :%s " % e)
                 return None
 
-        assets = DBCollection(self._db, DBPrefix.ST_Asset, AssetState)
+        assets = self.dbService.getAssetsCollection()
         asset = assets.TryGet(assetId)
 
         return asset
 
     def ShowAllAssets(self):
-
-        assets = DBCollection(self._db, DBPrefix.ST_Asset, AssetState)
+        assets =self.dbService.getAssetsCollection()
         keys = assets.Keys
         return keys
 
@@ -375,7 +420,7 @@ class LevelDBBlockchain(NodeServices):
         elif type(hash) is UInt256:
             hash = hash.ToBytes()
 
-        out = self._db.get(DBPrefix.DATA_Transaction + hash)
+        out = self.dbService.get(self.dbService.getPrefixTransaction() + hash)
         if out is not None:
             out = bytearray(out)
             height = int.from_bytes(out[:4], 'little')
@@ -420,15 +465,14 @@ class LevelDBBlockchain(NodeServices):
         return False
 
     def ContainsTransaction(self, hash):
-        tx = self._db.get(DBPrefix.DATA_Transaction + hash.ToBytes())
+        tx = self.dbService.get(self.dbService.getPrefixTransaction() + hash.ToBytes())
         return True if tx is not None else False
 
     def GetHeader(self, hash):
         if isinstance(hash, UInt256):
             hash = hash.ToString().encode()
-
         try:
-            out = bytearray(self._db.get(DBPrefix.DATA_Block + hash))
+            out = bytearray(self.dbService.get(self.dbService.getPrefixBlock() + hash))
             out = out[8:]
             outhex = binascii.unhexlify(out)
             return Header.FromTrimmedData(outhex, 0)
@@ -466,18 +510,22 @@ class LevelDBBlockchain(NodeServices):
         return None
 
     def GetHeaderByHeight(self, height):
-
         if len(self._header_index) <= height:
             return False
 
         hash = self._header_index[height]
-
         return self.GetHeader(hash)
 
     def GetHeaderHash(self, height):
         if height < len(self._header_index) and height >= 0:
             return self._header_index[height]
         return None
+
+    def GetHeaderIndex(self):
+        return self._header_index
+
+    def SetHeaderIndex(self, headerIndex):
+        self._header_index = headerIndex
 
     def GetBlockHash(self, height):
         """
@@ -501,7 +549,7 @@ class LevelDBBlockchain(NodeServices):
         if type(hash) is UInt256:
             hash = hash.ToBytes()
         try:
-            value = self._db.get(DBPrefix.DATA_Block + hash)[0:8]
+            value = self.dbService.get(self.dbService.getPrefixBlock() + hash)[0:8]
             amount = int.from_bytes(value, 'little', signed=False)
             return amount
         except Exception as e:
@@ -554,7 +602,8 @@ class LevelDBBlockchain(NodeServices):
 
     def GetBlockByHash(self, hash):
         try:
-            out = bytearray(self._db.get(DBPrefix.DATA_Block + hash))
+            value = self.dbService.getBlock(hash)
+            out = bytearray(value)
             out = out[8:]
             outhex = binascii.unhexlify(out)
             return Block.FromTrimmedData(outhex)
@@ -621,7 +670,7 @@ class LevelDBBlockchain(NodeServices):
         if hHash not in self._header_index:
             self._header_index.append(hHash)
 
-        with self._db.write_batch() as wb:
+        with self.dbService.getWriter() as wb:
             while header.Index - 2000 >= self._stored_header_count:
                 ms = StreamManager.GetStream()
                 w = BinaryWriter(ms)
@@ -629,14 +678,13 @@ class LevelDBBlockchain(NodeServices):
                 w.Write2000256List(headers_to_write)
                 out = ms.ToArray()
                 StreamManager.ReleaseStream(ms)
-                wb.put(DBPrefix.IX_HeaderHashList + self._stored_header_count.to_bytes(4, 'little'), out)
-
+                wb.put(self.dbService.getPrefixHeaderHashList() + self._stored_header_count.to_bytes(4, 'little'), out)
                 self._stored_header_count += 2000
 
-        with self._db.write_batch() as wb:
-            if self._db.get(DBPrefix.DATA_Block + hHash) is None:
-                wb.put(DBPrefix.DATA_Block + hHash, bytes(8) + header.ToArray())
-            wb.put(DBPrefix.SYS_CurrentHeader, hHash + header.Index.to_bytes(4, 'little'))
+        with self.dbService.getWriter() as wb:
+            if self.dbService.get(self.dbService.getPrefixBlock() + hHash) is None:
+                wb.put(self.dbService.getPrefixBlock() + hHash, bytes(8) + header.ToArray())
+            wb.put(self.dbService.getKeyCurrentHeader(), hHash + header.Index.to_bytes(4, 'little'))
 
     @property
     def BlockCacheCount(self):
@@ -645,27 +693,26 @@ class LevelDBBlockchain(NodeServices):
     def Persist(self, block):
 
         self._persisting_block = block
-
-        accounts = DBCollection(self._db, DBPrefix.ST_Account, AccountState)
-        unspentcoins = DBCollection(self._db, DBPrefix.ST_Coin, UnspentCoinState)
-        spentcoins = DBCollection(self._db, DBPrefix.ST_SpentCoin, SpentCoinState)
-        assets = DBCollection(self._db, DBPrefix.ST_Asset, AssetState)
-        validators = DBCollection(self._db, DBPrefix.ST_Validator, ValidatorState)
-        contracts = DBCollection(self._db, DBPrefix.ST_Contract, ContractState)
-        storages = DBCollection(self._db, DBPrefix.ST_Storage, StorageItem)
+        accounts = self.dbService.getAccountsCollection()
+        unspentcoins = self.dbService.getCoinsCollection()
+        spentcoins = self.dbService.getSpentCoinsCollection()
+        assets = self.dbService.getAssetsCollection()
+        validators = self.dbService.getValidatorsCollection()
+        contracts = self.dbService.getContractCollection()
+        storages = self.dbService.getStorageCollection()
 
         amount_sysfee = self.GetSysFeeAmount(block.PrevHash) + block.TotalFees().value
         amount_sysfee_bytes = amount_sysfee.to_bytes(8, 'little')
 
         to_dispatch = []
 
-        with self._db.write_batch() as wb:
+        with self.dbService.getWriter() as wb:
 
-            wb.put(DBPrefix.DATA_Block + block.Hash.ToBytes(), amount_sysfee_bytes + block.Trim())
+            wb.put(self.dbService.getPrefixBlock() + block.Hash.ToBytes(), amount_sysfee_bytes + block.Trim())
 
             for tx in block.Transactions:
 
-                wb.put(DBPrefix.DATA_Transaction + tx.Hash.ToBytes(), block.IndexBytes() + tx.ToArray())
+                wb.put(self.dbService.getPrefixTransaction() + tx.Hash.ToBytes(), block.IndexBytes() + tx.ToArray())
 
                 # go through all outputs and add unspent coins to them
 
@@ -802,7 +849,7 @@ class LevelDBBlockchain(NodeServices):
             # commit contracts
             contracts.Commit(wb)
 
-            wb.put(DBPrefix.SYS_CurrentBlock, block.Hash.ToBytes() + block.IndexBytes())
+            wb.put(self.dbService.getKeyCurrentBlock() + block.Hash.ToBytes(), block.IndexBytes())
             self._current_block_height = block.Index
             self._persisting_block = None
 
@@ -846,11 +893,12 @@ class LevelDBBlockchain(NodeServices):
                 if limit and ctr == limit:
                     break
 
+
     def Resume(self):
         self._currently_persisting = False
-        super(LevelDBBlockchain, self).Resume()
+        super(LocalNode, self).Resume()
         self.PersistBlocks()
 
     def Dispose(self):
-        self._db.close()
+        self.dbService.close()
         self._disposed = True

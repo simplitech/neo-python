@@ -4,8 +4,8 @@ Description:
 Usage:
     from neo.Wallets.Coin import Coin
 """
-from neo.Core.CoinReference import CoinReference
-from neo.Core.State.CoinState import CoinState
+from neocore.Core.CoinReference import CoinReference
+from neocore.Core.State.CoinState import CoinState
 from neocore.IO.Mixins import TrackableMixin
 from neocore.Cryptography.Crypto import Crypto
 

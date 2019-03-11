@@ -5,7 +5,7 @@ Test handling of a node(s) disconnecting. Reasons can be:
 - node shuts us down for unknown reason
 - node shuts us down because they shutdown
 """
-
+from neocore.Test.NeoTestCase import NeoTestCase
 from twisted.trial import unittest as twisted_unittest
 from twisted.internet.address import IPv4Address
 from twisted.internet import error
@@ -16,7 +16,6 @@ from neo.Network.NodeLeader import NodeLeader
 from neo.Network.address import Address
 from neo.Network.Utils import TestTransportEndpoint
 from neo.Network.NeoNode import NeoNode, HEARTBEAT_BLOCKS
-from neo.Utils.NeoTestCase import NeoTestCase
 
 
 class NetworkConnectionLostTests(twisted_unittest.TestCase, NeoTestCase):

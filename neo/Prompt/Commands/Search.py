@@ -1,8 +1,7 @@
 from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
-from neo.Prompt.PromptData import PromptData
 from neo.Prompt.Utils import get_arg
-from neo.Core.Blockchain import Blockchain
-from neo.logging import log_manager
+from neocore.Core.Blockchain import Blockchain
+from neocore.logging import log_manager
 from neo.Prompt.PromptPrinter import prompt_print as print
 import json
 
@@ -40,7 +39,7 @@ class CommandSearchAsset(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            results = Blockchain.Default().SearchAssetState(item)
+            results = Blockchain.GetInstance().SearchAssetState(item)
             print("Found %s results for %s" % (len(results), item))
             for asset in results:
                 print(json.dumps(asset.ToJson(), indent=4))
@@ -61,7 +60,7 @@ class CommandSearchContract(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            contracts = Blockchain.Default().SearchContracts(query=item)
+            contracts = Blockchain.GetInstance().SearchContracts(query=item)
             print("Found %s results for %s" % (len(contracts), item))
             for contract in contracts:
                 print(json.dumps(contract.ToJson(), indent=4))

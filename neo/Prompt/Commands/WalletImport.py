@@ -9,8 +9,8 @@ from prompt_toolkit import prompt
 from neocore.Utils import isValidPublicAddress
 from neocore.UInt160 import UInt160
 from neocore.Cryptography.Crypto import Crypto
-from neo.SmartContract.Contract import Contract
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Contract import Contract
+from neocore.Core.Blockchain import Blockchain
 from neo.Wallets import NEP5Token
 from neo.Prompt.PromptPrinter import prompt_print as print
 
@@ -272,7 +272,7 @@ def ImportToken(wallet, contract_hash):
         print("please open a wallet")
         return
 
-    contract = Blockchain.Default().GetContract(contract_hash)
+    contract = Blockchain.GetInstance().GetContract(contract_hash)
 
     if contract:
         hex_script = binascii.hexlify(contract.Code.Script)

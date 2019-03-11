@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-from neo.Core.Blockchain import Blockchain
-from neo.Core.Block import Block
-from neo.IO.MemoryStream import MemoryStream
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.Block import Block
+from neocore.IO.MemoryStream import MemoryStream
 from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
 from neo.Implementations.Blockchains.LevelDB.DBPrefix import DBPrefix
 from neo.Settings import settings
 from neocore.IO.BinaryReader import BinaryReader
 from neocore.IO.BinaryWriter import BinaryWriter
-from neo.IO.MemoryStream import StreamManager, MemoryStream
+from neocore.IO.MemoryStream import StreamManager, MemoryStream
 import argparse
 import os
 import shutil
@@ -91,7 +91,7 @@ def main():
             blockchain = LevelDBBlockchain(settings.chain_leveldb_path, skip_header_check=True)
             Blockchain.RegisterBlockchain(blockchain)
 
-            start_block = Blockchain.Default().Height
+            start_block = Blockchain.GetInstance().Height
             print("Starting import at %s " % start_block)
         else:
             print("Will import %s of %s blocks to %s" % (total_blocks, total_blocks_available, target_dir))
@@ -118,7 +118,7 @@ def main():
             blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
             Blockchain.RegisterBlockchain(blockchain)
 
-        chain = Blockchain.Default()
+        chain = Blockchain.GetInstance()
 
         if store_notifications:
             NotificationDB.instance().start()
@@ -153,10 +153,10 @@ def main():
 
     print("Wrote blocks.  Now writing headers")
 
-    chain = Blockchain.Default()
+    chain = Blockchain.GetInstance()
 
     # reset header hash list
-    chain._db.delete(DBPrefix.IX_HeaderHashList)
+    chain.GetInstance().nodeServices.dbService.delete(chain.GetInstance().nodeServices.dbService.getPrefixHeaderHashList())
 
     total = len(header_hash_list)
 

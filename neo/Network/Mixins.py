@@ -1,5 +1,5 @@
 
-from neo.Core.Mixins import VerifiableMixin
+from neocore.Core.Mixins import VerifiableMixin
 
 
 class InventoryMixin(VerifiableMixin):

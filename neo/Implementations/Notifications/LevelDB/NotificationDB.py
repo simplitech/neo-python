@@ -1,12 +1,12 @@
 import plyvel
-from neo.EventHub import events
-from neo.SmartContract.SmartContractEvent import SmartContractEvent, NotifyEvent, NotifyType
-from neo.Core.State.ContractState import ContractState
+from neocore.EventHub import events
+from neocore.Core.Contract.SmartContractEvent import SmartContractEvent, NotifyEvent, NotifyType
+from neocore.Core.State.ContractState import ContractState
 from neo.Settings import settings
-from neo.Core.Blockchain import Blockchain
-from neo.Core.Helper import Helper
+from neocore.Core.Blockchain import Blockchain
+from neocore.Core.Helper import Helper
 from neocore.UInt160 import UInt160
-from neo.logging import log_manager
+from neocore.logging import log_manager
 
 logger = log_manager.getLogger('db')
 
@@ -91,7 +91,7 @@ class NotificationDB:
         def call_on_event(sc_event: NotifyEvent):
             self.on_smart_contract_event(sc_event)
 
-        Blockchain.Default().PersistCompleted.on_change += self.on_persist_completed
+        Blockchain.GetInstance().PersistCompleted.on_change += self.on_persist_completed
 
     def on_smart_contract_created(self, sc_event: SmartContractEvent):
         """

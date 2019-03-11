@@ -1,7 +1,7 @@
 from neo.Utils.WalletFixtureTestCase import WalletFixtureTestCase
 from neo.Implementations.Wallets.peewee.UserWallet import UserWallet
 from neo.Wallets.utils import to_aes_key
-from neo.Core.Blockchain import Blockchain
+from neocore.Core.Blockchain import Blockchain
 from neocore.UInt160 import UInt160
 from neocore.KeyPair import KeyPair
 
@@ -18,11 +18,11 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     @property
     def GAS(self):
-        return Blockchain.Default().SystemCoin().Hash
+        return Blockchain.GetInstance().SystemCoin().Hash
 
     @property
     def NEO(self):
-        return Blockchain.Default().SystemShare().Hash
+        return Blockchain.GetInstance().SystemShare().Hash
 
     @classmethod
     def GetWallet1(cls, recreate=False):

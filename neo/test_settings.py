@@ -1,4 +1,4 @@
-from neo.Utils.NeoTestCase import NeoTestCase
+from neocore.Test.NeoTestCase import NeoTestCase
 from neo.Settings import SettingsHolder, ROOT_INSTALL_PATH
 import os
 

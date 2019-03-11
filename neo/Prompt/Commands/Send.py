@@ -1,6 +1,6 @@
-from neo.Core.TX.Transaction import TransactionOutput, ContractTransaction, TXFeeError
-from neo.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
-from neo.SmartContract.ContractParameterContext import ContractParametersContext
+from neocore.Core.TX.Transaction import TransactionOutput, ContractTransaction, TXFeeError
+from neocore.Core.TX.TransactionAttribute import TransactionAttribute, TransactionAttributeUsage
+from neocore.Core.Contract.ContractParameterContext import ContractParametersContext
 from neo.Network.NodeLeader import NodeLeader
 from neo.Prompt.Utils import get_arg, get_from_addr, get_asset_id, lookup_addr_str, get_tx_attr_from_args, \
     get_owners_from_params, get_fee, get_change_addr, get_asset_amount
@@ -15,8 +15,6 @@ from neo.Prompt.PromptData import PromptData
 from neo.Prompt.CommandBase import CommandBase, CommandDesc, ParameterDesc
 from logzero import logger
 from neo.Prompt.PromptPrinter import prompt_print as print
-from neo.Core.Blockchain import Blockchain
-
 
 class CommandWalletSend(CommandBase):
 
@@ -268,7 +266,7 @@ def process_transaction(wallet, contract_tx, scripthash_from=None, scripthash_ch
         for order in tx.outputs:
             dest_addr = order.Address
             value = order.Value.ToString()  # fixed8
-            if order.AssetId == Blockchain.Default().SystemShare().Hash:
+            if order.AssetId == Blockchain.GetInstance().SystemShare().Hash:
                 asset_name = 'NEO'
             else:
                 asset_name = 'GAS'
