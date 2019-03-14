@@ -87,7 +87,7 @@ def custom_background_code():
     thread and handle exiting this thread in another way (eg. with signals and events).
     """
     while True:
-        logger.info("[%s] Block %s / %s", settings.net_name, str(Blockchain.GetInstance().Height + 1), str(Blockchain.GetInstance().HeaderHeight + 1))
+        logger.info("[%s] Block %s / %s", settings.net_name, str(Blockchain.Default().Height + 1), str(Blockchain.Default().HeaderHeight + 1))
         sleep(15)
 
 
@@ -110,7 +110,7 @@ def persist_done(value):
 
 def start_block_persisting():
     global block_deferred
-    block_deferred = threads.deferToThread(Blockchain.GetInstance().PersistBlocks)
+    block_deferred = threads.deferToThread(Blockchain.Default().PersistBlocks)
     block_deferred.addCallback(persist_done)
     block_deferred.addErrback(on_persistblocks_error)
 
@@ -309,7 +309,7 @@ def main():
     # After the reactor is stopped, gracefully shutdown the database.
     logger.info("Closing databases...")
     NotificationDB.close()
-    Blockchain.GetInstance().Dispose()
+    Blockchain.Default().Dispose()
     NodeLeader.Instance().Shutdown()
     if wallet:
         wallet.Close()

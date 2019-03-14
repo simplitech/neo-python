@@ -91,7 +91,7 @@ class NotificationDB:
         def call_on_event(sc_event: NotifyEvent):
             self.on_smart_contract_event(sc_event)
 
-        Blockchain.GetInstance().PersistCompleted.on_change += self.on_persist_completed
+        Blockchain.Default().PersistCompleted.on_change += self.on_persist_completed
 
     def on_smart_contract_created(self, sc_event: SmartContractEvent):
         """

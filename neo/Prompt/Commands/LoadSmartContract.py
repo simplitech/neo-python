@@ -23,7 +23,7 @@ def ImportContractAddr(wallet, contract_hash, pubkey_script_hash):
         neo.SmartContract.Contract.Contract
     """
 
-    contract = Blockchain.GetInstance().GetContract(contract_hash)
+    contract = Blockchain.Default().GetContract(contract_hash)
     if not contract or not pubkey_script_hash:
         print("Could not find contract")
         return

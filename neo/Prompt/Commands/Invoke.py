@@ -104,7 +104,7 @@ def InvokeWithTokenVerificationScript(wallet, tx, token, fee=Fixed8.Zero(), invo
 
     if wallet_tx:
 
-        token_contract_state = Blockchain.GetInstance().GetContract(token.ScriptHash.ToString())
+        token_contract_state = Blockchain.Default().GetContract(token.ScriptHash.ToString())
         print("token contract  %s " % token_contract_state)
 
         tx.Attributes = [
@@ -157,7 +157,7 @@ def InvokeWithTokenVerificationScript(wallet, tx, token, fee=Fixed8.Zero(), invo
 def TestInvokeContract(wallet, args, withdrawal_tx=None,
                        parse_params=True, from_addr=None,
                        min_fee=DEFAULT_MIN_FEE, invoke_attrs=None, owners=None):
-    BC = Blockchain.GetInstance()
+    BC = Blockchain.Default()
 
     contract = BC.GetContract(args[0])
 
@@ -271,7 +271,7 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
     if from_addr is not None:
         from_addr = PromptUtils.lookup_addr_str(wallet, from_addr)
 
-    bc = Blockchain.GetInstance()
+    bc = Blockchain.Default()
 
     accounts = bc.nodeServices.dbService.getAccountsCollection()
     assets = bc.nodeServices.dbService.getAssetsCollection()
@@ -355,7 +355,7 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
             # this will be removed in favor of neo.EventHub
             if len(service.notifications) > 0:
                 for n in service.notifications:
-                    Blockchain.GetInstance().OnNotify(n)
+                    Blockchain.Default().OnNotify(n)
 
             print("Used %s Gas " % engine.GasConsumed().ToString())
 
@@ -403,7 +403,7 @@ def test_invoke(script, wallet, outputs, withdrawal_tx=None,
 def test_deploy_and_invoke(deploy_script, invoke_args, wallet,
                            from_addr=None, min_fee=DEFAULT_MIN_FEE, invocation_test_mode=True,
                            debug_map=None, invoke_attrs=None, owners=None):
-    bc = Blockchain.GetInstance()
+    bc = Blockchain.Default()
 
     accounts = bc.nodeServices.dbService.getAccountsCollection()
     assets = bc.nodeServices.dbService.getAssetsCollection()
@@ -600,7 +600,7 @@ def test_deploy_and_invoke(deploy_script, invoke_args, wallet,
             if len(service.notifications) > 0:
 
                 for n in service.notifications:
-                    Blockchain.GetInstance().OnNotify(n)
+                    Blockchain.Default().OnNotify(n)
 
             logger.info("Used %s Gas " % engine.GasConsumed().ToString())
 

@@ -109,7 +109,7 @@ class BlockchainFixtureTestCase(NeoTestCase):
     @classmethod
     def tearDownClass(cls):
         # tear down Blockchain DB
-        Blockchain.GetInstance().DeregisterBlockchain()
+        Blockchain.Default().DeregisterBlockchain()
         if cls._blockchain is not None:
             cls._blockchain.Dispose()
 

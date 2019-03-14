@@ -44,13 +44,13 @@ class LevelDBBlockchainTest(BlockchainFixtureTestCase):
     def test_GetAccountState(self):
         # test passing an address
         addr = "AK2nJJpJr6o664CWJKi1QRXjqeic2zRp8y"
-        acct = Blockchain.GetInstance().GetAccountState(addr)
+        acct = Blockchain.Default().GetAccountState(addr)
         acct = acct.ToJson()
         self.assertIn('balances', acct.keys())
 
         # test failure
         addr = "AK2nJJpJr6o664CWJKi1QRXjqeic2zRp81"
-        acct = Blockchain.GetInstance().GetAccountState(addr)
+        acct = Blockchain.Default().GetAccountState(addr)
         self.assertIsNone(acct)
 
     def test_GetHeaderBy(self):
@@ -76,5 +76,5 @@ class LevelDBBlockchainTest(BlockchainFixtureTestCase):
         self.assertEqual(block, None)
 
     def test_ShowAllAssets(self):
-        assets = Blockchain.GetInstance().ShowAllAssets()
+        assets = Blockchain.Default().ShowAllAssets()
         self.assertEqual(len(assets), 2)

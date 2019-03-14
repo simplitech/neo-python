@@ -1,7 +1,7 @@
 from itertools import groupby
 
 from neocore.IO.DBService import DBService
-from neocore.Services.BlockchainService import NodeServices
+from neocore.Services.BlockchainService import StorageService
 import binascii
 from neocore.Core.Blockchain import Blockchain
 from neocore.Core.Header import Header
@@ -37,7 +37,7 @@ from neocore.logging import log_manager
 logger = log_manager.getLogger('db')
 
 
-class LocalNode(NodeServices):
+class LocalNode(StorageService):
 
     def __init__(self, settings : Settings, dbService : DBService):
         super(LocalNode, self).__init__(dbService, settings)
@@ -70,10 +70,8 @@ class LocalNode(NodeServices):
 
 
     def Initialize(self, skip_version_check = False, skip_header_check = False):
-        genesisBlock = Blockchain.GetInstance().GenesisBlock()
+        genesisBlock = Blockchain.Default().GenesisBlock()
         self._header_index.append(genesisBlock.Header.Hash.ToBytes())
-        # if(self.GetBlock(0) is None):
-        #     self.Persist(genesisBlock)
 
         version = self.dbService.getSystemVersion()
         if skip_version_check:
@@ -199,7 +197,7 @@ class LocalNode(NodeServices):
         unclaimed = []
 
         for hash, group in groupby(inputs, lambda x: x.PrevHash):
-            tx, height_start = Blockchain.GetInstance().GetTransaction(hash)
+            tx, height_start = Blockchain.Default().GetTransaction(hash)
 
             if tx is None:
                 raise Exception("Could Not calculate bonus")

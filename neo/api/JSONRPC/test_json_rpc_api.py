@@ -176,13 +176,13 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getblockcount")
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(Blockchain.GetInstance().Height + 1, res["result"])
+        self.assertEqual(Blockchain.Default().Height + 1, res["result"])
 
         # test GET requests ...next we will test a complex method; see test_sendmany_complex
         req = self._gen_get_rpc_req("getblockcount")
         mock_req = mock_get_request(req)
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(Blockchain.GetInstance().Height + 1, res["result"])
+        self.assertEqual(Blockchain.Default().Height + 1, res["result"])
 
     def test_getblockhash(self):
         req = self._gen_post_rpc_req("getblockhash", params=[2])
@@ -240,7 +240,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getassetstate", params=[asset_str])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.GetInstance().SystemShare().Hash))
+        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.Default().SystemShare().Hash))
         self.assertEqual(res['result']['admin'], 'Abf2qMs1pzQb8kYk9RuxtUb9jtRKJVuBJt')
         self.assertEqual(res['result']['available'], 10000000000000000)
 
@@ -249,7 +249,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         req = self._gen_post_rpc_req("getassetstate", params=[asset_str])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
-        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.GetInstance().SystemCoin().Hash))
+        self.assertEqual(res['result']['assetId'], '0x%s' % str(Blockchain.Default().SystemCoin().Hash))
         self.assertEqual(res['result']['amount'], 10000000000000000)
         self.assertEqual(res['result']['admin'], 'AWKECj9RD8rS8RPcpCgYVjk1DeYyHwxZm3')
 
@@ -299,7 +299,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
 
         self.assertEqual(res['result']['index'], 10)
         self.assertEqual(res['result']['hash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
-        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 10 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.Default().Height - 10 + 1)
         self.assertEqual(res['result']['nextblockhash'], '0x2b1c78633dae7ab81f64362e0828153079a17b018d779d0406491f84c27b086f')
 
     def test_get_block_hash(self):
@@ -308,7 +308,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
 
         self.assertEqual(res['result']['index'], 11)
-        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 11 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.Default().Height - 11 + 1)
         self.assertEqual(res['result']['previousblockhash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
 
     def test_get_block_hash_0x(self):
@@ -502,7 +502,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
 
     def test_get_unspents(self):
         u = UInt256.ParseString('f999c36145a41306c846ea80290416143e8e856559818065be3f4e143c60e43a')
-        unspents = Blockchain.GetInstance().GetAllUnspent(u)
+        unspents = Blockchain.Default().GetAllUnspent(u)
         self.assertEqual(len(unspents), 1)
 
     def test_gettxout(self):
@@ -1099,7 +1099,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         amount = 1
         net_fee = 0.005
         change_addr = 'AGYaEi3W6ndHPUmW7T12FFfsbQ6DWymkEm'
-        address_from_account_state = Blockchain.GetInstance().GetAccountState(address_from).ToJson()
+        address_from_account_state = Blockchain.Default().GetAccountState(address_from).ToJson()
         address_from_gas = next(filter(lambda b: b['asset'] == '0x602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7',
                                        address_from_account_state['balances']))
         address_from_gas_bal = address_from_gas['value']
@@ -1670,7 +1670,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
         self.assertEqual(res['result']['index'], 10)
         self.assertEqual(res['result']['hash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
-        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 10 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.Default().Height - 10 + 1)
         self.assertEqual(res['result']['nextblockhash'], '0x2b1c78633dae7ab81f64362e0828153079a17b018d779d0406491f84c27b086f')
 
     def test_getblockheader_hash(self):
@@ -1679,7 +1679,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         res = json.loads(self.app.home(mock_req))
 
         self.assertEqual(res['result']['index'], 11)
-        self.assertEqual(res['result']['confirmations'], Blockchain.GetInstance().Height - 11 + 1)
+        self.assertEqual(res['result']['confirmations'], Blockchain.Default().Height - 11 + 1)
         self.assertEqual(res['result']['previousblockhash'], '0xd69e7a1f62225a35fed91ca578f33447d93fa0fd2b2f662b957e19c38c1dab1e')
 
     def test_getblockheader_hash_0x(self):
@@ -1689,7 +1689,7 @@ class JsonRpcApiTestCase(BlockchainFixtureTestCase):
         self.assertEqual(res['result']['index'], 11)
 
     def test_getblockheader_hash_failure(self):
-        req = self._gen_post_rpc_req("getblockheader", params=[Blockchain.GetInstance().Height + 1, 1])
+        req = self._gen_post_rpc_req("getblockheader", params=[Blockchain.Default().Height + 1, 1])
         mock_req = mock_post_request(json.dumps(req).encode("utf-8"))
         res = json.loads(self.app.home(mock_req))
         self.assertTrue('error' in res)

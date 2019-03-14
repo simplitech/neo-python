@@ -514,7 +514,7 @@ class Wallet:
         Returns:
             Fixed8: the amount of Gas unavailable to claim.
         """
-        height = Blockchain.GetInstance().Height + 1
+        height = Blockchain.Default().Height + 1
         unspents = self.FindUnspentCoinsByAsset(Blockchain.SystemShare().Hash)
         refs = [coin.Reference for coin in unspents]
         try:
@@ -652,9 +652,9 @@ class Wallet:
         self._lock.acquire()
         try:
             blockcount = 0
-            while self._current_height <= Blockchain.GetInstance().Height and (block_limit == 0 or blockcount < block_limit):
+            while self._current_height <= Blockchain.Default().Height and (block_limit == 0 or blockcount < block_limit):
 
-                block = Blockchain.GetInstance().GetBlockByHeight(self._current_height)
+                block = Blockchain.Default().GetBlockByHeight(self._current_height)
 
                 if block is not None:
                     self.ProcessNewBlock(block)
@@ -1245,7 +1245,7 @@ class Wallet:
         balances = []
         for asset in assets:
             if type(asset) is UInt256:
-                bc_asset = Blockchain.GetInstance().GetAssetState(asset.ToBytes())
+                bc_asset = Blockchain.Default().GetAssetState(asset.ToBytes())
                 total = self.GetBalance(asset).value / Fixed8.D
                 balances.append((bc_asset.GetName(), total))
             elif type(asset) is NEP5Token.NEP5Token:
@@ -1261,10 +1261,10 @@ class Wallet:
             bool: True if wallet is synced.
 
         """
-        if Blockchain.GetInstance().Height == 0:
+        if Blockchain.Default().Height == 0:
             return False
 
-        if (int(100 * self._current_height / Blockchain.GetInstance().Height)) < 100:
+        if (int(100 * self._current_height / Blockchain.Default().Height)) < 100:
             return False
         else:
             return True

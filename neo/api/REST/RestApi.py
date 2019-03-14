@@ -124,7 +124,7 @@ class RestApi:
     def get_by_block(self, request, block):
         request.setHeader('Content-Type', 'application/json')
         try:
-            if int(block) > Blockchain.GetInstance().Height:
+            if int(block) > Blockchain.Default().Height:
                 return self.format_message("Higher than current block")
             else:
                 notifications = self.notif.get_by_block(block)
@@ -149,7 +149,7 @@ class RestApi:
     def get_by_tx(self, request, tx_hash):
         request.setHeader('Content-Type', 'application/json')
 
-        bc = Blockchain.GetInstance()  # type: Blockchain
+        bc = Blockchain.Default()  # type: Blockchain
         notifications = []
         try:
             hash = UInt256.ParseString(tx_hash)
@@ -206,7 +206,7 @@ class RestApi:
     def get_status(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({
-            'current_height': Blockchain.GetInstance().Height + 1,
+            'current_height': Blockchain.Default().Height + 1,
             'version': settings.VERSION_NAME,
             'num_peers': len(NodeLeader.Instance().Peers)
         }, indent=4, sort_keys=True)
@@ -244,7 +244,7 @@ class RestApi:
         total_pages = math.ceil(notif_len / page_len)
 
         return json.dumps({
-            'current_height': Blockchain.GetInstance().Height + 1,
+            'current_height': Blockchain.Default().Height + 1,
             'message': message,
             'total': notif_len,
             'results': None if show_none else [n.ToJson() for n in notifications],
@@ -255,7 +255,7 @@ class RestApi:
 
     def format_message(self, message):
         return json.dumps({
-            'current_height': Blockchain.GetInstance().Height + 1,
+            'current_height': Blockchain.Default().Height + 1,
             'message': message,
             'total': 0,
             'results': None,

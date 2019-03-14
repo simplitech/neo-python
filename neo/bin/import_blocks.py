@@ -91,7 +91,7 @@ def main():
             blockchain = LevelDBBlockchain(settings.chain_leveldb_path, skip_header_check=True)
             Blockchain.RegisterBlockchain(blockchain)
 
-            start_block = Blockchain.GetInstance().Height
+            start_block = Blockchain.Default().Height
             print("Starting import at %s " % start_block)
         else:
             print("Will import %s of %s blocks to %s" % (total_blocks, total_blocks_available, target_dir))
@@ -118,7 +118,7 @@ def main():
             blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
             Blockchain.RegisterBlockchain(blockchain)
 
-        chain = Blockchain.GetInstance()
+        chain = Blockchain.Default()
 
         if store_notifications:
             NotificationDB.instance().start()
@@ -153,10 +153,10 @@ def main():
 
     print("Wrote blocks.  Now writing headers")
 
-    chain = Blockchain.GetInstance()
+    chain = Blockchain.Default()
 
     # reset header hash list
-    chain.GetInstance().nodeServices.dbService.delete(chain.GetInstance().nodeServices.dbService.getPrefixHeaderHashList())
+    chain.Default().nodeServices.dbService.delete(chain.Default().nodeServices.dbService.getPrefixHeaderHashList())
 
     total = len(header_hash_list)
 

@@ -39,11 +39,11 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     @property
     def GAS(self):
-        return Blockchain.GetInstance().SystemCoin().Hash
+        return Blockchain.Default().SystemCoin().Hash
 
     @property
     def NEO(self):
-        return Blockchain.GetInstance().SystemShare().Hash
+        return Blockchain.Default().SystemShare().Hash
 
     @classmethod
     def GetWallet1(cls, recreate=False):

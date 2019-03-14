@@ -80,11 +80,11 @@ def get_asset_id(wallet, asset_str):
             return token
 
     if asset_str.lower() == 'neo':
-        assetId = Blockchain.GetInstance().SystemShare().Hash
+        assetId = Blockchain.Default().SystemShare().Hash
     elif asset_str.lower() == 'gas':
-        assetId = Blockchain.GetInstance().SystemCoin().Hash
-    elif Blockchain.GetInstance().GetAssetState(asset_str):
-        assetId = Blockchain.GetInstance().GetAssetState(asset_str).AssetId
+        assetId = Blockchain.Default().SystemCoin().Hash
+    elif Blockchain.Default().GetAssetState(asset_str):
+        assetId = Blockchain.Default().GetAssetState(asset_str).AssetId
 
     return assetId
 
@@ -95,7 +95,7 @@ def get_asset_amount(amount, assetId):
         print("invalid amount format")
         return False
 
-    elif f8amount.value % pow(10, 8 - Blockchain.GetInstance().GetAssetState(assetId.ToBytes()).Precision) != 0:
+    elif f8amount.value % pow(10, 8 - Blockchain.Default().GetAssetState(assetId.ToBytes()).Precision) != 0:
         print("incorrect amount precision")
         return False
 

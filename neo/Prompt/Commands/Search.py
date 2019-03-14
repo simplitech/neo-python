@@ -39,7 +39,7 @@ class CommandSearchAsset(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            results = Blockchain.GetInstance().SearchAssetState(item)
+            results = Blockchain.Default().SearchAssetState(item)
             print("Found %s results for %s" % (len(results), item))
             for asset in results:
                 print(json.dumps(asset.ToJson(), indent=4))
@@ -60,7 +60,7 @@ class CommandSearchContract(CommandBase):
     def execute(self, arguments):
         item = get_arg(arguments)
         if item is not None:
-            contracts = Blockchain.GetInstance().SearchContracts(query=item)
+            contracts = Blockchain.Default().SearchContracts(query=item)
             print("Found %s results for %s" % (len(contracts), item))
             for contract in contracts:
                 print(json.dumps(contract.ToJson(), indent=4))

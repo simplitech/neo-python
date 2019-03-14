@@ -236,7 +236,7 @@ class LeaderTestCase(WalletFixtureTestCase):
 
         self.assertFalse(res)
 
-        block = Blockchain.GetInstance().GenesisBlock()
+        block = Blockchain.Default().GenesisBlock()
 
         res2 = leader.InventoryReceived(block)
 

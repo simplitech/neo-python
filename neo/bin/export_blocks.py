@@ -48,11 +48,11 @@ def main():
     blockchain = LevelDBBlockchain(settings.chain_leveldb_path)
     Blockchain.RegisterBlockchain(blockchain)
 
-    chain = Blockchain.GetInstance()
+    chain = Blockchain.Default()
 
     with open(file_path, 'wb') as file_out:
 
-        total = Blockchain.GetInstance().Height - 1
+        total = Blockchain.Default().Height - 1
 
         if args.totalblocks:
             total = args.totalblocks

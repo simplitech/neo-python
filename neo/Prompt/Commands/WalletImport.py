@@ -272,7 +272,7 @@ def ImportToken(wallet, contract_hash):
         print("please open a wallet")
         return
 
-    contract = Blockchain.GetInstance().GetContract(contract_hash)
+    contract = Blockchain.Default().GetContract(contract_hash)
 
     if contract:
         hex_script = binascii.hexlify(contract.Code.Script)

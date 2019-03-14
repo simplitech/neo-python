@@ -191,7 +191,7 @@ class JsonRpcApi:
     def json_rpc_method_handler(self, method, params):
 
         if method == "getaccountstate":
-            acct = Blockchain.GetInstance().GetAccountState(params[0])
+            acct = Blockchain.Default().GetAccountState(params[0])
             if acct is None:
                 try:
                     acct = AccountState(script_hash=Helper.AddrStrToScriptHash(params[0]))
@@ -203,40 +203,40 @@ class JsonRpcApi:
         elif method == "getassetstate":
             asset_str = params[0]
             if asset_str.lower() == 'neo':
-                assetId = Blockchain.GetInstance().SystemShare().Hash
+                assetId = Blockchain.Default().SystemShare().Hash
             elif asset_str.lower() == 'gas':
-                assetId = Blockchain.GetInstance().SystemCoin().Hash
+                assetId = Blockchain.Default().SystemCoin().Hash
             else:
                 assetId = UInt256.ParseString(params[0])
-            asset = Blockchain.GetInstance().GetAssetState(assetId.ToBytes())
+            asset = Blockchain.Default().GetAssetState(assetId.ToBytes())
             if asset:
                 return asset.ToJson()
             raise JsonRpcError(-100, "Unknown asset")
 
         elif method == "getbestblockhash":
-            return '0x%s' % Blockchain.GetInstance().CurrentHeaderHash.decode('utf-8')
+            return '0x%s' % Blockchain.Default().CurrentHeaderHash.decode('utf-8')
 
         elif method == "getblock":
             # this should work for either str or int
-            block = Blockchain.GetInstance().GetBlock(params[0])
+            block = Blockchain.Default().GetBlock(params[0])
             if not block:
                 raise JsonRpcError(-100, "Unknown block")
             return self.get_block_output(block, params)
 
         elif method == "getblockcount":
-            return Blockchain.GetInstance().Height + 1
+            return Blockchain.Default().Height + 1
 
         elif method == "getblockhash":
             height = params[0]
-            if height >= 0 and height <= Blockchain.GetInstance().Height:
-                return '0x%s' % Blockchain.GetInstance().GetBlockHash(height).decode('utf-8')
+            if height >= 0 and height <= Blockchain.Default().Height:
+                return '0x%s' % Blockchain.Default().GetBlockHash(height).decode('utf-8')
             else:
                 raise JsonRpcError(-100, "Invalid Height")
 
         elif method == "getblocksysfee":
             height = params[0]
-            if height >= 0 and height <= Blockchain.GetInstance().Height:
-                return Blockchain.GetInstance().GetSysFeeAmountByHeight(height)
+            if height >= 0 and height <= Blockchain.Default().Height:
+                return Blockchain.Default().GetSysFeeAmountByHeight(height)
             else:
                 raise JsonRpcError(-100, "Invalid Height")
 
@@ -245,7 +245,7 @@ class JsonRpcApi:
 
         elif method == "getcontractstate":
             script_hash = UInt160.ParseString(params[0])
-            contract = Blockchain.GetInstance().GetContract(script_hash.ToBytes())
+            contract = Blockchain.Default().GetContract(script_hash.ToBytes())
             if contract is None:
                 raise JsonRpcError(-100, "Unknown contract")
             return contract.ToJson()
@@ -262,7 +262,7 @@ class JsonRpcApi:
 
         elif method == "getrawtransaction":
             tx_id = UInt256.ParseString(params[0])
-            tx, height = Blockchain.GetInstance().GetTransaction(tx_id)
+            tx, height = Blockchain.Default().GetTransaction(tx_id)
             if not tx:
                 raise JsonRpcError(-100, "Unknown Transaction")
             return self.get_tx_output(tx, height, params)
@@ -271,7 +271,7 @@ class JsonRpcApi:
             script_hash = UInt160.ParseString(params[0])
             key = binascii.unhexlify(params[1].encode('utf-8'))
             storage_key = StorageKey(script_hash=script_hash, key=key)
-            storage_item = Blockchain.GetInstance().GetStorageItem(storage_key)
+            storage_item = Blockchain.Default().GetStorageItem(storage_key)
             if storage_item:
                 return storage_item.Value.hex()
             return None
@@ -283,7 +283,7 @@ class JsonRpcApi:
                 # throws exception, not anything more specific
                 raise JsonRpcError(-100, "Unknown transaction")
 
-            tx, height = Blockchain.GetInstance().GetTransaction(hash)
+            tx, height = Blockchain.Default().GetTransaction(hash)
             if tx:
                 return height
             else:
@@ -292,7 +292,7 @@ class JsonRpcApi:
         elif method == "gettxout":
             hash = params[0].encode('utf-8')
             index = params[1]
-            utxo = Blockchain.GetInstance().GetUnspent(hash, index)
+            utxo = Blockchain.Default().GetUnspent(hash, index)
             if utxo:
                 return utxo.ToJson(index)
             else:
@@ -380,7 +380,7 @@ class JsonRpcApi:
 
         elif method == "getblockheader":
             # this should work for either str or int
-            blockheader = Blockchain.GetInstance().GetHeaderBy(params[0])
+            blockheader = Blockchain.Default().GetHeaderBy(params[0])
             if not blockheader:
                 raise JsonRpcError(-100, "Unknown block")
             return self.get_blockheader_output(blockheader, params)
@@ -402,9 +402,9 @@ class JsonRpcApi:
         if len(params) >= 2 and params[1]:
             jsn = tx.ToJson()
             if height >= 0:
-                header = Blockchain.GetInstance().GetHeaderByHeight(height)
+                header = Blockchain.Default().GetHeaderByHeight(height)
                 jsn['blockhash'] = header.Hash.To0xString()
-                jsn['confirmations'] = Blockchain.GetInstance().Height - header.Index + 1
+                jsn['confirmations'] = Blockchain.Default().Height - header.Index + 1
                 jsn['blocktime'] = header.Timestamp
             return jsn
 
@@ -416,8 +416,8 @@ class JsonRpcApi:
 
         if len(params) >= 2 and params[1]:
             jsn = block.ToJson()
-            jsn['confirmations'] = Blockchain.GetInstance().Height - block.Index + 1
-            hash = Blockchain.GetInstance().GetNextBlockHash(block.Hash)
+            jsn['confirmations'] = Blockchain.Default().Height - block.Index + 1
+            hash = Blockchain.Default().GetNextBlockHash(block.Hash)
             if hash:
                 jsn['nextblockhash'] = '0x%s' % hash.decode('utf-8')
             return jsn
@@ -645,8 +645,8 @@ class JsonRpcApi:
 
         if len(params) >= 2 and params[1]:
             jsn = blockheader.ToJson()
-            jsn['confirmations'] = Blockchain.GetInstance().Height - blockheader.Index + 1
-            hash = Blockchain.GetInstance().GetNextBlockHash(blockheader.Hash)
+            jsn['confirmations'] = Blockchain.Default().Height - blockheader.Index + 1
+            hash = Blockchain.Default().GetNextBlockHash(blockheader.Hash)
             if hash:
                 jsn['nextblockhash'] = '0x%s' % hash.decode('utf-8')
             return jsn

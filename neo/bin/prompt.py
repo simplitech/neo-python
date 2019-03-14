@@ -94,15 +94,15 @@ class PromptInterface:
             PromptInterface.history = PromptFileHistory(history_filename)
 
         self.input_parser = InputParser()
-        self.start_height = Blockchain.GetInstance().Height
+        self.start_height = Blockchain.Default().Height
         self.start_dt = datetime.datetime.utcnow()
 
     def get_bottom_toolbar(self, cli=None):
         out = []
         try:
             return "[%s] Progress: %s/%s" % (settings.net_name,
-                                             str(Blockchain.GetInstance().Height),
-                                             str(Blockchain.GetInstance().HeaderHeight))
+                                             str(Blockchain.Default().Height),
+                                             str(Blockchain.Default().HeaderHeight))
         except Exception as e:
             pass
 
@@ -133,7 +133,7 @@ class PromptInterface:
         print('Shutting down. This may take a bit...')
         self.go_on = False
         PromptData.close_wallet()
-        Blockchain.GetInstance().Dispose()
+        Blockchain.Default().Dispose()
         NodeLeader.Instance().Shutdown()
         reactor.stop()
 
@@ -161,7 +161,7 @@ class PromptInterface:
         logger.debug("On DB loop error! %s " % err)
 
     def run(self):
-        dbloop = task.LoopingCall(Blockchain.GetInstance().PersistBlocks)
+        dbloop = task.LoopingCall(Blockchain.Default().PersistBlocks)
         dbloop_deferred = dbloop.start(.1)
         dbloop_deferred.addErrback(self.on_looperror)
 
@@ -323,7 +323,7 @@ def main():
 
     # After the reactor is stopped, gracefully shutdown the database.
     NotificationDB.close()
-    Blockchain.GetInstance().Dispose()
+    Blockchain.Default().Dispose()
     NodeLeader.Instance().Shutdown()
 
 

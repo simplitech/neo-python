@@ -1,8 +1,10 @@
 from neocore.Test.NeoTestCase import NeoTestCase
 
-from neo.Implementations.Blockchains.LevelDB.LevelDBBlockchain import LevelDBBlockchain
 from neocore.Core.Blockchain import Blockchain
 from neocore.IO.Helper import Helper
+
+from neo.Implementations.Blockchains.LevelDB.LevelDBService import LevelDBService
+from neo.Services.LocalNode import LocalNode
 from neo.Settings import settings
 import shutil
 import binascii
@@ -24,9 +26,12 @@ class LevelDBTest(NeoTestCase):
     def setUpClass(cls):
         settings.setup_unittest_net()
         Blockchain.DeregisterBlockchain()
-        cls._blockchain = LevelDBBlockchain(path=cls.LEVELDB_TESTPATH, skip_version_check=True)
+        dbService = LevelDBService(cls.LEVELDB_TESTPATH)
+        nodeServices = LocalNode(settings, dbService)
+        cls._blockchain = Blockchain(nodeServices, nodeServices)
         Blockchain.RegisterBlockchain(cls._blockchain)
-        cls._genesis = Blockchain.GenesisBlock()
+        cls._genesis = Blockchain.Default().GenesisBlock()
+        nodeServices.Initialize(skip_version_check=True)
 
     @classmethod
     def tearDownClass(cls):

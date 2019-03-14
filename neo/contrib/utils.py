@@ -37,7 +37,7 @@ def wait_for_tx(self, tx, max_seconds=120):
 
     while True:
         # Try to find transaction in blockchain
-        _tx, height = Blockchain.GetInstance().GetTransaction(tx_hash)
+        _tx, height = Blockchain.Default().GetTransaction(tx_hash)
         if height > -1:
             return True
 

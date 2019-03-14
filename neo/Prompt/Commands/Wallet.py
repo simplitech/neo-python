@@ -306,7 +306,7 @@ def ClaimGas(wallet, from_addr_str=None, to_addr_str=None):
 
     unclaimed_coin_refs = [coin.Reference for coin in unclaimed_coins]
 
-    available_bonus = Blockchain.GetInstance().CalculateBonusIgnoreClaimed(unclaimed_coin_refs)
+    available_bonus = Blockchain.Default().CalculateBonusIgnoreClaimed(unclaimed_coin_refs)
 
     if available_bonus == Fixed8.Zero():
         print("No gas to claim")

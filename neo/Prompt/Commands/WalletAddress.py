@@ -294,7 +294,7 @@ def split_to_vouts(asset, addr, input_val, divisions):
     outputs = []
     total = Fixed8.Zero()
 
-    if asset == Blockchain.GetInstance().SystemShare().Hash:
+    if asset == Blockchain.Default().SystemShare().Hash:
         if new_amounts % Fixed8.FD() > Fixed8.Zero():
             new_amounts = new_amounts.Ceil()
 

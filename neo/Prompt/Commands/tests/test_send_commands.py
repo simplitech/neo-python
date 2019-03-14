@@ -397,7 +397,7 @@ class UserWalletTestCase(WalletFixtureTestCase):
                 PromptData.Wallet = self.GetWallet1(recreate=True)
                 args = ['sendmany', '2', '--from-addr=%s' % self.wallet_1_addr, '--change-addr=%s' % self.watch_addr_str, '--fee=0.005']
 
-                address_from_account_state = Blockchain.GetInstance().GetAccountState(self.wallet_1_addr).ToJson()
+                address_from_account_state = Blockchain.Default().GetAccountState(self.wallet_1_addr).ToJson()
                 address_from_gas = next(filter(lambda b: b['asset'] == '0x602c79718b16e442de58778e148d0b1084e3b2dffd5de6b7b16cee7969282de7',
                                                address_from_account_state['balances']))
                 address_from_gas_bal = address_from_gas['value']

@@ -36,8 +36,8 @@ class VersionPayload(SerializableMixin):
             self.Nonce = nonce
             self.UserAgent = userAgent
 
-            if Blockchain.GetInstance() is not None and Blockchain.GetInstance().Height is not None:
-                self.StartHeight = Blockchain.GetInstance().Height
+            if Blockchain.Default() is not None and Blockchain.Default().Height is not None:
+                self.StartHeight = Blockchain.Default().Height
 
             self.Relay = True
 

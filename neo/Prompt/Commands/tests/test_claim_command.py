@@ -33,11 +33,11 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     @property
     def GAS(self):
-        return Blockchain.GetInstance().SystemCoin().Hash
+        return Blockchain.Default().SystemCoin().Hash
 
     @property
     def NEO(self):
-        return Blockchain.GetInstance().SystemShare().Hash
+        return Blockchain.Default().SystemShare().Hash
 
     @classmethod
     def GetWallet1(cls, recreate=False):
@@ -136,18 +136,18 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     def test_block_12248_sysfee(self):
 
-        fee = Blockchain.GetInstance().GetSysFeeAmountByHeight(12248)
+        fee = Blockchain.Default().GetSysFeeAmountByHeight(12248)
 
         self.assertEqual(fee, 2050)
 
     def test_block_12323_sysfee(self):
 
-        fee = Blockchain.GetInstance().GetSysFeeAmountByHeight(12323)
+        fee = Blockchain.Default().GetSysFeeAmountByHeight(12323)
 
         self.assertEqual(fee, 2540)
 
     def test_block_11351_sysfee(self):
 
-        fee = Blockchain.GetInstance().GetSysFeeAmountByHeight(11351)
+        fee = Blockchain.Default().GetSysFeeAmountByHeight(11351)
 
         self.assertEqual(fee, 1560)

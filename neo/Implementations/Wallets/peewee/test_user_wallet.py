@@ -26,11 +26,11 @@ class UserWalletTestCase(WalletFixtureTestCase):
 
     @property
     def GAS(self):
-        return Blockchain.GetInstance().SystemCoin().Hash
+        return Blockchain.Default().SystemCoin().Hash
 
     @property
     def NEO(self):
-        return Blockchain.GetInstance().SystemShare().Hash
+        return Blockchain.Default().SystemShare().Hash
 
     @classmethod
     def GetWallet1(cls, recreate=False):
@@ -141,7 +141,7 @@ class UserWalletTestCase(WalletFixtureTestCase):
         wallet = self.GetWallet1()
 
         token_hash = b'31730cc9a1844891a3bafd1aa929a4142860d8d3'
-        contract = Blockchain.GetInstance().GetContract(token_hash)
+        contract = Blockchain.Default().GetContract(token_hash)
 
         token = NEP5Token(binascii.hexlify(contract.Code.Script))
         token.Query()

@@ -55,9 +55,9 @@ class CommandSCBuild(CommandBase):
             print("Please specify the required parameter")
             return
 
-        Blockchain.GetInstance().Pause()
+        Blockchain.Default().Pause()
         contract_script = Build(arguments)
-        Blockchain.GetInstance().Resume()
+        Blockchain.Default().Resume()
         return contract_script
 
     def command_desc(self):
@@ -74,14 +74,14 @@ class CommandSCBuildRun(CommandBase):
             print("Please specify the required parameters")
             return None, None, None, None
 
-        Blockchain.GetInstance().Pause()
+        Blockchain.Default().Pause()
         try:
             tx, result, total_ops, engine = BuildAndRun(arguments, PromptData.Wallet)
         except TypeError:
             print(f'run `{CommandSC().command_desc().command} {self.command_desc().command} help` to see supported queries')
-            Blockchain.GetInstance().Resume()
+            Blockchain.Default().Resume()
             return None, None, None, None
-        Blockchain.GetInstance().Resume()
+        Blockchain.Default().Resume()
         return tx, result, total_ops, engine
 
     def command_desc(self):
@@ -119,14 +119,14 @@ class CommandSCLoadRun(CommandBase):
             print("Please specify the required parameters")
             return
 
-        Blockchain.GetInstance().Pause()
+        Blockchain.Default().Pause()
         try:
             tx, result, total_ops, engine = LoadAndRun(arguments, PromptData.Wallet)
         except TypeError:
             print(f'run `{CommandSC().command_desc().command} {self.command_desc().command} help` to see supported queries')
-            Blockchain.GetInstance().Resume()
+            Blockchain.Default().Resume()
             return
-        Blockchain.GetInstance().Resume()
+        Blockchain.Default().Resume()
         return tx, result, total_ops, engine
 
     def command_desc(self):

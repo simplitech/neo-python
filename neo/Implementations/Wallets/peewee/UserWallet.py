@@ -465,10 +465,10 @@ class UserWallet(Wallet):
         tokens = list(self._tokens.values())
         assets = assets + tokens
 
-        if Blockchain.GetInstance().Height == 0:
+        if Blockchain.Default().Height == 0:
             percent_synced = 0
         else:
-            percent_synced = int(100 * self._current_height / Blockchain.GetInstance().Height)
+            percent_synced = int(100 * self._current_height / Blockchain.Default().Height)
 
         jsn = {}
         jsn['path'] = self._path
@@ -478,7 +478,7 @@ class UserWallet(Wallet):
         for addr in Address.select():
             logger.info("Script hash %s %s" % (addr.ScriptHash, type(addr.ScriptHash)))
             addr_str = Crypto.ToAddress(UInt160(data=addr.ScriptHash))
-            acct = Blockchain.GetInstance().GetAccountState(addr_str)
+            acct = Blockchain.Default().GetAccountState(addr_str)
             token_balances = self.TokenBalancesForAddress(addr_str)
             if acct:
                 json = acct.ToJson()
@@ -497,7 +497,7 @@ class UserWallet(Wallet):
         watch_balances = []
         for asset in assets:
             if type(asset) is UInt256:
-                bc_asset = Blockchain.GetInstance().GetAssetState(asset.ToBytes())
+                bc_asset = Blockchain.Default().GetAssetState(asset.ToBytes())
                 total = self.GetBalance(asset).value / Fixed8.D
                 watch_total = self.GetBalance(asset, CoinState.WatchOnly).value / Fixed8.D
                 balances.append("[%s]: %s " % (bc_asset.GetName(), total))

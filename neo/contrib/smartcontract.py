@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from functools import wraps
 
-from neo.EventHub import events, SmartContractEvent
+from neocore.EventHub import events, SmartContractEvent
 
 
 class SmartContract:

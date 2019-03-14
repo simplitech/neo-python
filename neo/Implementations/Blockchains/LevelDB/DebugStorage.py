@@ -15,12 +15,12 @@ class DebugStorage:
         return self._db
 
     def reset(self):
-        for key in Blockchain.GetInstance().nodeServices.dbService.getStorageListIterator():
+        for key in Blockchain.Default().nodeServices.dbService.getStorageListIterator():
             self._db.delete(key)
 
     def clone_from_live(self):
-        clone_db = Blockchain.GetInstance().nodeServices.dbService.getSnapshot()
-        for key, value in clone_db.iterator(prefix=Blockchain.GetInstance().nodeServices.dbService.getPrefixStorage(), include_value=True):
+        clone_db = Blockchain.Default().nodeServices.dbService.getSnapshot()
+        for key, value in clone_db.iterator(prefix=Blockchain.Default().nodeServices.dbService.getPrefixStorage(), include_value=True):
             self._db.put(key, value)
 
     def __init__(self, db):

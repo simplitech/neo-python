@@ -266,7 +266,7 @@ def process_transaction(wallet, contract_tx, scripthash_from=None, scripthash_ch
         for order in tx.outputs:
             dest_addr = order.Address
             value = order.Value.ToString()  # fixed8
-            if order.AssetId == Blockchain.GetInstance().SystemShare().Hash:
+            if order.AssetId == Blockchain.Default().SystemShare().Hash:
                 asset_name = 'NEO'
             else:
                 asset_name = 'GAS'

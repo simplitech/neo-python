@@ -311,7 +311,7 @@ class NeoNode(Protocol):
             self.address.last_connection = Address.Now()
 
     def ReleaseBlockRequests(self):
-        bcr = BC.GetInstance().BlockRequests
+        bcr = BC.Default().BlockRequests
         requests = self.myblockrequests
 
         for req in requests:
@@ -463,14 +463,14 @@ class NeoNode(Protocol):
         self.RequestPeerInfo()
 
     def AskForMoreHeaders(self):
-        logger.debug(f"{self.prefix} asking for more headers, starting from {BC.GetInstance().HeaderHeight}")
+        logger.debug(f"{self.prefix} asking for more headers, starting from {BC.Default().HeaderHeight}")
         self.health_check(HEARTBEAT_HEADERS)
-        get_headers_message = Message("getheaders", GetBlocksPayload(hash_start=[BC.GetInstance().CurrentHeaderHash]))
+        get_headers_message = Message("getheaders", GetBlocksPayload(hash_start=[BC.Default().CurrentHeaderHash]))
         self.SendSerializedMessage(get_headers_message)
 
     def AskForMoreBlocks(self):
 
-        distance = BC.GetInstance().HeaderHeight - BC.GetInstance().Height
+        distance = BC.Default().HeaderHeight - BC.Default().Height
 
         current_mode = self.sync_mode
 
@@ -485,7 +485,7 @@ class NeoNode(Protocol):
             self.start_block_loop()
 
         else:
-            if len(BC.GetInstance().BlockRequests) > self.leader.BREQMAX:
+            if len(BC.Default().BlockRequests) > self.leader.BREQMAX:
                 logger.debug(f"{self.prefix} data request speed exceeding node response rate...pausing to catch up")
                 self.leader.throttle_sync()
             else:
@@ -493,30 +493,30 @@ class NeoNode(Protocol):
 
     def DoAskForMoreBlocks(self):
         hashes = []
-        hashstart = BC.GetInstance().Height + 1
-        current_header_height = BC.GetInstance().HeaderHeight + 1
+        hashstart = BC.Default().Height + 1
+        current_header_height = BC.Default().HeaderHeight + 1
 
         do_go_ahead = False
-        if BC.GetInstance().BlockSearchTries > 100 and len(BC.GetInstance().BlockRequests) > 0:
+        if BC.Default().BlockSearchTries > 100 and len(BC.Default().BlockRequests) > 0:
             do_go_ahead = True
 
         first = None
         while hashstart <= current_header_height and len(hashes) < self.leader.BREQPART:
-            hash = BC.GetInstance().GetHeaderHash(hashstart)
+            hash = BC.Default().GetHeaderHash(hashstart)
             if not do_go_ahead:
-                if hash is not None and hash not in BC.GetInstance().BlockRequests \
+                if hash is not None and hash not in BC.Default().BlockRequests \
                         and hash not in self.myblockrequests:
 
                     if not first:
                         first = hashstart
-                    BC.GetInstance().BlockRequests.add(hash)
+                    BC.Default().BlockRequests.add(hash)
                     self.myblockrequests.add(hash)
                     hashes.append(hash)
             else:
                 if hash is not None:
                     if not first:
                         first = hashstart
-                    BC.GetInstance().BlockRequests.add(hash)
+                    BC.Default().BlockRequests.add(hash)
                     self.myblockrequests.add(hash)
                     hashes.append(hash)
 
@@ -524,8 +524,8 @@ class NeoNode(Protocol):
 
         if len(hashes) > 0:
             logger.debug(
-                f"{self.prefix} asking for more blocks {first} - {hashstart} ({len(hashes)}) stale count: {BC.GetInstance().BlockSearchTries} "
-                f"BCRLen: {len(BC.GetInstance().BlockRequests)}")
+                f"{self.prefix} asking for more blocks {first} - {hashstart} ({len(hashes)}) stale count: {BC.Default().BlockSearchTries} "
+                f"BCRLen: {len(BC.Default().BlockRequests)}")
             self.health_check(HEARTBEAT_BLOCKS)
             message = Message("getdata", InvPayload(InventoryType.Block, hashes))
             self.SendSerializedMessage(message)
@@ -622,9 +622,9 @@ class NeoNode(Protocol):
             ok_hashes = []
             for hash in inventory.Hashes:
                 hash = hash.encode('utf-8')
-                if hash not in self.myblockrequests and hash not in BC.GetInstance().BlockRequests:
+                if hash not in self.myblockrequests and hash not in BC.Default().BlockRequests:
                     ok_hashes.append(hash)
-                    BC.GetInstance().BlockRequests.add(hash)
+                    BC.Default().BlockRequests.add(hash)
                     self.myblockrequests.add(hash)
             if len(ok_hashes):
                 message = Message("getdata", InvPayload(InventoryType.Block, ok_hashes))
@@ -662,7 +662,7 @@ class NeoNode(Protocol):
             if inventory is not None:
                 logger.debug(f"{self.prefix} received headers")
                 self.heart_beat(HEARTBEAT_HEADERS)
-                BC.GetInstance().AddHeaders(inventory.Headers)
+                BC.Default().AddHeaders(inventory.Headers)
 
         except Exception as e:
             logger.debug(f"Error handling Block headers {e}")
@@ -680,8 +680,8 @@ class NeoNode(Protocol):
 
         blockhash = block.Hash.ToBytes()
         try:
-            if blockhash in BC.GetInstance().BlockRequests:
-                BC.GetInstance().BlockRequests.remove(blockhash)
+            if blockhash in BC.Default().BlockRequests:
+                BC.Default().BlockRequests.remove(blockhash)
         except KeyError:
             pass
         try:
@@ -758,7 +758,7 @@ class NeoNode(Protocol):
         if not inventory:
             return
 
-        blockchain = BC.GetInstance()
+        blockchain = BC.Default()
 
         hash = inventory.HashStart[0]
 
@@ -805,7 +805,7 @@ class NeoNode(Protocol):
 
             if inventory.Type == InventoryType.TXInt:
                 if not item:
-                    item, index = BC.GetInstance().GetTransaction(hash)
+                    item, index = BC.Default().GetTransaction(hash)
                 if not item:
                     item = self.leader.GetTransaction(hash)
                 if item:
@@ -814,7 +814,7 @@ class NeoNode(Protocol):
 
             elif inventory.Type == InventoryType.BlockInt:
                 if not item:
-                    item = BC.GetInstance().GetBlock(hash)
+                    item = BC.Default().GetBlock(hash)
                 if item:
                     message = Message(command='block', payload=item, print_payload=False)
                     self.SendSerializedMessage(message)
@@ -837,7 +837,7 @@ class NeoNode(Protocol):
         if not inventory:
             return
 
-        blockchain = BC.GetInstance()
+        blockchain = BC.Default()
         hash = inventory.HashStart[0]
         if not blockchain.GetHeader(hash):
             return
